@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/auth";
+import { useUIStore } from "@/stores/ui";
 
+interface SyncTable { name: string; columns: unknown[] }
+interface SyncData { tables: SyncTable[]; added: number; changed: number; removed: number }
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
 const DB_TYPES = [
   { value: "postgresql", label: "PostgreSQL" },
   { value: "mysql", label: "MySQL" },
@@ -16,29 +21,10 @@ const DB_TYPES = [
   { value: "duckdb", label: "DuckDB" },
 ];
 
-interface Connection {
-  id: string;
-  name: string;
-  db_type: string;
-  host: string;
-  port: number;
-  database_name: string;
-  sync_status: string;
-  table_count: number;
-  last_synced_at: string | null;
-  created_at: string;
-}
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
-
 export function ConnectDatabase() {
   const token = useAuthStore((s) => s.token);
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const addToast = useUIStore((s) => s.addToast);
 
-  const [name, setName] = useState("");
   const [dbType, setDbType] = useState("postgresql");
   const [host, setHost] = useState("localhost");
   const [port, setPort] = useState("5432");
@@ -46,128 +32,129 @@ export function ConnectDatabase() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const loadConnections = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_URL}/connections`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setConnections(data.data ?? []);
-      }
-    } catch { /* ignore */ }
-    setLoaded(true);
-  };
+  const [testing, setTesting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
+  const [syncResult, setSyncResult] = useState<SyncData | null>(null);
 
-  if (!loaded) loadConnections();
+  const getConfig = () => ({
+    db_type: dbType, host, port: parseInt(port), database: dbName, username, password,
+  });
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleTest = async () => {
     if (!token) return;
-    setLoading(true);
-    setError("");
+    setTesting(true); setTestResult(null);
     try {
-      const res = await fetch(`${API_URL}/connections`, {
+      const r = await fetch(`${API_URL}/sync/test`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name, db_type: dbType, host, port: parseInt(port), database_name: dbName, username, password }),
+        body: JSON.stringify(getConfig()),
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text);
+      const d = await r.json();
+      if (d.success) {
+        setTestResult("success");
+        addToast("Connection successful!", "success");
+      } else {
+        setTestResult("error");
+        addToast(d.error || "Connection failed", "error");
       }
-      setName("");
-      setHost("localhost");
-      setPort("5432");
-      setDbName("");
-      setUsername("");
-      setPassword("");
-      loadConnections();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
+    } catch {
+      setTestResult("error");
+      addToast("Connection failed", "error");
     }
+    setTesting(false);
+  };
+
+  const handleSync = async () => {
+    if (!token) return;
+    setSyncing(true); setSyncResult(null);
+    try {
+      const r = await fetch(`${API_URL}/sync/extract`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(getConfig()),
+      });
+      const d = await r.json();
+      if (d.success) {
+        setSyncResult(d.data as SyncData);
+        addToast(`Synced ${d.data.tables.length} tables!`, "success");
+      } else {
+        addToast(d.error || "Sync failed", "error");
+      }
+    } catch {
+      addToast("Sync failed", "error");
+    }
+    setSyncing(false);
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Add Database Connection</CardTitle>
-          <CardDescription>Connect to your database to start querying</CardDescription>
+          <CardTitle>Connect Database</CardTitle>
+          <CardDescription>Connect to your database to query your real schema</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Connection Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Production DB" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="db-type">Database Type</Label>
-                <Select value={dbType} onValueChange={setDbType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DB_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="host">Host</Label>
-                <Input id="host" value={host} onChange={(e) => setHost(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="port">Port</Label>
-                <Input id="port" type="number" value={port} onChange={(e) => setPort(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dbname">Database Name</Label>
-                <Input id="dbname" value={dbName} onChange={(e) => setDbName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="db-type">Database Type</Label>
+              <Select value={dbType} onValueChange={setDbType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DB_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" disabled={loading || !name}>
-              {loading ? "Connecting..." : "Connect Database"}
+            <div className="space-y-2">
+              <Label htmlFor="host">Host</Label>
+              <Input id="host" value={host} onChange={(e) => setHost(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="port">Port</Label>
+              <Input id="port" type="number" value={port} onChange={(e) => setPort(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dbname">Database Name</Label>
+              <Input id="dbname" value={dbName} onChange={(e) => setDbName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+          </div>
+
+          {testResult === "success" && <p className="mt-2 text-sm text-green-600">Connected successfully</p>}
+          {testResult === "error" && <p className="mt-2 text-sm text-destructive">Connection failed — check your credentials</p>}
+
+          <div className="mt-4 flex gap-2">
+            <Button variant="outline" onClick={handleTest} disabled={testing || !token}>
+              {testing ? "Testing..." : "Test Connection"}
             </Button>
-          </form>
+            <Button onClick={handleSync} disabled={syncing || !token || testResult !== "success"}>
+              {syncing ? "Syncing..." : "Sync Schema"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {connections.length > 0 && (
+      {syncResult && syncResult.tables && syncResult.tables.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Connected Databases</CardTitle>
-            <CardDescription>{connections.length} connection{connections.length !== 1 ? "s" : ""}</CardDescription>
+            <CardTitle>Synced Tables ({syncResult.tables.length})</CardTitle>
+            <CardDescription>
+              {syncResult.added} added, {syncResult.changed} changed, {syncResult.removed} removed
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {connections.map((c) => (
-                <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {c.db_type} — {c.host}:{c.port}/{c.database_name}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className={`h-2 w-2 rounded-full ${
-                      c.sync_status === "synced" ? "bg-green-500" :
-                      c.sync_status === "syncing" ? "bg-yellow-400" :
-                      c.sync_status === "error" ? "bg-red-500" : "bg-gray-300"
-                    }`} />
-                    <span className="capitalize text-muted-foreground">{c.sync_status}</span>
-                    {c.table_count > 0 && <span className="text-muted-foreground">({c.table_count} tables)</span>}
-                  </div>
+              {syncResult.tables.map((t: SyncTable, i: number) => (
+                <div key={i} className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.columns.length} columns</p>
                 </div>
               ))}
             </div>

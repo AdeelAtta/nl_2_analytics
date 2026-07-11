@@ -91,17 +91,16 @@ def create_tenant(name: str, owner_email: str) -> dict[str, Any]:
 
 
 def create_user(email: str, password: str, tenant_id: str, name: str = "") -> dict[str, Any]:
+    import bcrypt as _bcrypt
     store = get_user_store_file()
     if store.find("email", email):
         raise ValueError("Email already registered")
-    salt = uuid.uuid4().hex
-    pwd_hash = hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
+    pwd_hash = _bcrypt.hashpw(password.encode(), _bcrypt.gensalt()).decode()
     user = {
         "id": str(uuid.uuid4()),
         "email": email,
         "name": name or email.split("@")[0],
         "password_hash": pwd_hash,
-        "salt": salt,
         "role": "admin",
         "tenant_id": tenant_id,
         "created_at": str(datetime.now(UTC)),
@@ -111,11 +110,11 @@ def create_user(email: str, password: str, tenant_id: str, name: str = "") -> di
 
 
 def authenticate_user(email: str, password: str) -> dict[str, Any] | None:
+    import bcrypt as _bcrypt
     store = get_user_store_file()
     user = store.find("email", email)
     if not user:
         return None
-    pwd_hash = hashlib.sha256(f"{user['salt']}:{password}".encode()).hexdigest()
-    if pwd_hash != user["password_hash"]:
+    if not _bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
         return None
     return user

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
 from app.auth.jwt import create_token
+from app.core.config import get_settings
 from app.services.store import authenticate_user, create_tenant, create_user
 
 router = APIRouter(tags=["auth"])
@@ -38,6 +39,9 @@ class AuthResponse(BaseModel):
 
 @router.post("/auth/demo-login", response_model=AuthResponse)
 async def demo_login(body: DemoLoginRequest) -> AuthResponse:
+    settings = get_settings()
+    if settings.environment == "production":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Demo login not available in production")
     token = create_token({"sub": body.user_id, "tenant_id": body.tenant_id, "role": "user"})
     return AuthResponse(
         access_token=token, tenant_id=body.tenant_id, user_id=body.user_id,

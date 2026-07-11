@@ -68,6 +68,7 @@ def create_app() -> FastAPI:
     from app.api.v1.history import router as history_router
     from app.api.v1.query import router as query_router
     from app.api.v1.schema import router as schema_router
+    from app.api.v1.sync_db import router as sync_router
     from app.api.v1.tenants import router as tenants_router
 
     app.include_router(admin_router)
@@ -80,6 +81,7 @@ def create_app() -> FastAPI:
     app.include_router(history_router)
     app.include_router(query_router)
     app.include_router(schema_router)
+    app.include_router(sync_router)
     app.include_router(tenants_router)
 
     if settings.enable_metrics:
