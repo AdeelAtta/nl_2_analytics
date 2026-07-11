@@ -132,84 +132,85 @@
 | Task | Name | Deps | Status | Blocks |
 |------|------|------|--------|--------|
 | **TASK-009** | **Data models** | **TASK-008** | **done** | TASK-010 |
-| TASK-010 | Alembic migration | TASK-009 | ready | TASK-011 |
-| TASK-010 | Alembic migration | TASK-009 | backlog | TASK-011 |
-| TASK-011 | CRUD repository | TASK-010 | backlog | TASK-012, TASK-013, TASK-014, TASK-015 |
-| TASK-012 | Schema versioning | TASK-011 | backlog | — |
-| TASK-013 | RLS policies | TASK-011 | backlog | — |
-| TASK-014 | Unit tests | TASK-011 | backlog | — |
-| TASK-015 | Integration tests | TASK-011 | backlog | — |
+| TASK-010 | Alembic migration | TASK-009 | done | TASK-011 |
+| TASK-011 | CRUD repository | TASK-010 | done | TASK-012, TASK-013, TASK-014, TASK-015 |
+| TASK-012 | Schema versioning | TASK-011 | done | — |
+| TASK-013 | RLS policies | TASK-011 | done | — |
+| TASK-014 | Unit tests | TASK-011 | done | — |
+| TASK-015 | Integration tests (PostgreSQL) | TASK-011 | done | — |
 
 ### EP-003: Vector Index (Knowledge Engine Agent)
 
 | Task | Name | Deps | Status | Blocks |
 |------|------|------|--------|--------|
-| TASK-016 | Qdrant client & pool | TASK-001 | backlog | TASK-018, TASK-019 |
-| TASK-017 | BGE-M3 embedding service | TASK-001 | backlog | — |
-| TASK-018 | Vector point schemas | TASK-016 | backlog | — |
-| TASK-019 | Qdrant CRUD repository | TASK-016 | backlog | TASK-020, TASK-021, TASK-022 |
-| TASK-020 | Per-tenant collections | TASK-019 | backlog | — |
-| TASK-021 | Hybrid search | TASK-019 | backlog | — |
-| TASK-022 | Tests | TASK-019 | backlog | — |
+| TASK-016 | Qdrant client & pool | TASK-001 | done | TASK-018, TASK-019 |
+| TASK-017 | BGE-M3 embedding service (mock) | TASK-001 | done | — |
+| TASK-018 | Vector point schemas | TASK-016 | done | — |
+| TASK-019 | Qdrant CRUD repository | TASK-016 | done | TASK-020, TASK-021, TASK-022 |
+| TASK-020 | Per-tenant collections | TASK-019 | done | — |
+| TASK-021 | Hybrid search | TASK-019 | done | — |
+| TASK-022 | Tests | TASK-019 | done | — |
 
 ### EP-004: Knowledge Graph (Knowledge Engine Agent)
 
 | Task | Name | Deps | Status | Blocks |
 |------|------|------|--------|--------|
-| TASK-023 | Graph data models | TASK-009 | backlog | TASK-024 |
-| TASK-024 | Node CRUD repository | TASK-023 | backlog | TASK-026, TASK-027, TASK-028 |
-| TASK-025 | Edge CRUD repository | TASK-023 | backlog | — |
-| TASK-026 | Recursive CTE traversal | TASK-024 | backlog | — |
-| TASK-027 | Ontology import/export | TASK-024 | backlog | — |
-| TASK-028 | Tests | TASK-024 | backlog | — |
+| TASK-023 | Graph data models | TASK-009 | done | TASK-024 |
+| TASK-024 | Node CRUD repository | TASK-023 | done | TASK-026, TASK-027, TASK-028 |
+| TASK-025 | Edge CRUD repository | TASK-023 | done | — |
+| TASK-026 | Recursive CTE traversal | TASK-024 | done | — |
+| TASK-027 | Ontology import/export | TASK-024 | done | — |
+| TASK-028 | Tests | TASK-024 | done | — |
 
 ### EP-005: KE API Layer (Knowledge Engine Agent)
 
 | Task | Name | Deps | Status | Blocks |
 |------|------|------|--------|--------|
-| TASK-029 | Scaffold KE API | TASK-001 | backlog | TASK-030–042 |
-| TASK-030 | Unified response format | TASK-029 | backlog | — |
-| TASK-031 | Tenant middleware | TASK-029 | backlog | — |
-| TASK-032 | Internal auth | TASK-029 | backlog | — |
-| TASK-033 | Schema Store routes | TASK-029, EP-002 | backlog | — |
-| TASK-034 | Vector Index routes | TASK-029, EP-003 | backlog | — |
-| TASK-035 | Graph Store routes | TASK-029, EP-004 | backlog | — |
+| TASK-029 | Scaffold KE API | TASK-001 | done | TASK-030–042 |
+| TASK-030 | Unified response format | TASK-029 | done | — |
+| TASK-031 | Tenant middleware | TASK-029 | done | — |
+| TASK-032 | Internal auth | TASK-029 | done | — |
+| TASK-033 | Schema Store routes | TASK-029, EP-002 | done | — |
+| TASK-034 | Vector Index routes | TASK-029, EP-003 | done | — |
+| TASK-035 | Graph Store routes | TASK-029, EP-004 | done | — |
 | TASK-036 | Query History routes | TASK-029 | backlog | — |
 | TASK-037 | Feedback routes | TASK-029 | backlog | — |
 | TASK-038 | Config routes | TASK-029 | backlog | — |
 | TASK-039 | Metrics routes | TASK-029 | backlog | — |
 | TASK-040 | Audit routes | TASK-029 | backlog | — |
 | TASK-041 | Cache wrapper | TASK-029 | backlog | — |
-| TASK-042 | Integration tests | TASK-033 | backlog | — |
+| TASK-042 | Query Service + API routes | TASK-033 | done | — |
 
 ### EP-006: Schema Intelligence (Schema Intelligence Agent)
 
 | Task | Name | Deps | Status | Blocks |
 |------|------|------|--------|--------|
-| **TASK-043** | **DB connector interface** | **TASK-008** | **backlog** | TASK-044–048 |
-| TASK-044 | PostgreSQL connector | TASK-043 | backlog | — |
-| TASK-045 | MySQL connector | TASK-043 | backlog | — |
-| TASK-046 | Snowflake connector | TASK-043 | backlog | — |
-| TASK-047 | BigQuery connector | TASK-043 | backlog | — |
-| TASK-048 | DuckDB connector | TASK-043 | backlog | — |
-| TASK-049 | DDL parser | TASK-043 | backlog | TASK-050, TASK-051 |
-| TASK-050 | LLM description annotator | TASK-049 | backlog | TASK-052, TASK-053, TASK-055 |
-| TASK-051 | Relationship inference | TASK-049 | backlog | — |
-| TASK-052 | Incremental sync orchestrator | TASK-050 | backlog | TASK-054 |
-| TASK-053 | Schema-to-embedding pipeline | TASK-050, EP-003 | backlog | — |
-| TASK-054 | Metadata-to-KE sync | TASK-052, EP-005 | backlog | — |
-| TASK-055 | Tests | TASK-050 | backlog | — |
+| TASK-043 | DB connector interface | TASK-008 | done | TASK-044–048 |
+| TASK-044 | PostgreSQL connector | TASK-043 | done | — |
+| TASK-045 | MySQL connector | TASK-043 | done | — |
+| TASK-046 | Snowflake connector | TASK-043 | done | — |
+| TASK-047 | BigQuery connector | TASK-043 | done | — |
+| TASK-048 | DuckDB connector | TASK-043 | done | — |
+| TASK-049 | DDL parser | TASK-043 | done | TASK-050, TASK-051 |
+| TASK-050 | LLM description annotator | TASK-049 | done | TASK-052, TASK-053, TASK-055 |
+| TASK-051 | Relationship inference | TASK-049 | done | — |
+| TASK-052 | Incremental sync orchestrator | TASK-050 | done | TASK-054 |
+| TASK-053 | Schema-to-embedding pipeline | TASK-050, EP-003 | done | — |
+| TASK-054 | Metadata-to-KE sync | TASK-052, EP-005 | done | — |
+| TASK-055 | Tests | TASK-050 | done | — |
 
 ### EP-007: Context Retrieval (Query Pipeline Agent)
 
 | Task | Name | Deps | Status | Blocks |
 |------|------|------|--------|--------|
-| TASK-056 | Query embedding service | EP-003 | backlog | TASK-057 |
-| TASK-057 | Hybrid retriever | TASK-056, EP-005 | backlog | TASK-058, TASK-060, TASK-061 |
-| TASK-058 | Context ranking & dedup | TASK-057 | backlog | TASK-059 |
-| TASK-059 | Context window trimmer | TASK-058 | backlog | — |
-| TASK-060 | Query result cache | TASK-057 | backlog | — |
-| TASK-061 | Tests | TASK-057 | backlog | — |
+| TASK-042 | QueryService (hybrid search + DDL enrichment) | EP-005 | done | — |
+| TASK-043 | DDLRenderer + Discover endpoint | EP-005 | done | — |
+| TASK-145 | Query embedding service | EP-003 | merged into TASK-042 | — |
+| TASK-146 | Hybrid retriever | TASK-145, EP-005 | merged into TASK-042 | — |
+| TASK-147 | Context ranking & dedup | TASK-146 | backlog | TASK-148 |
+| TASK-148 | Context window trimmer | TASK-147 | backlog | — |
+| TASK-149 | Query result cache | TASK-146 | backlog | — |
+| TASK-150 | Tests | TASK-146 | merged into TASK-042 | — |
 
 ### EP-008: Intent & Planning (Query Pipeline Agent)
 
@@ -354,23 +355,18 @@
 
 ## 3. Critical Path (Longest Dependency Chain)
 
-The longest chain from start to finish:
+The critical path from where we are now:
 
 ```
-TASK-001 → TASK-002 → TASK-008 → TASK-009 → TASK-010 → TASK-011
-  └→ EP-002 done
-    └→ EP-003 (parallel, TASK-016 → TASK-019)
-      └→ EP-005 (TASK-029 → TASK-033 → TASK-042)
-        └→ EP-007 (TASK-056 → TASK-057 → TASK-061)
-          └→ EP-008 (TASK-062 → TASK-066)
-            └→ EP-009 (TASK-067 → TASK-072 → TASK-078)
-              └→ EP-010 (TASK-079 → TASK-090)
-                └→ EP-011 (TASK-091 → TASK-097)
-                  └→ EP-013 (TASK-105 → TASK-116)
-                    └→ EP-014 (TASK-117 → TASK-128)
+EP-007 done ──▶ EP-008 (TASK-062 → TASK-066)
+                  └──▶ EP-009 (TASK-067 → TASK-072 → TASK-078)
+                        └──▶ EP-010 (TASK-079 → TASK-090)
+                              └──▶ EP-011 (TASK-091 → TASK-097)
+                                    └──▶ EP-013 (TASK-105 → TASK-116)
+                                          └──▶ EP-014 (TASK-117 → TASK-128)
 ```
 
-**Critical path length**: ~50 tasks (sequential)
+**Critical path length from current state**: ~45 tasks (sequential)
 
 ---
 
@@ -378,20 +374,17 @@ TASK-001 → TASK-002 → TASK-008 → TASK-009 → TASK-010 → TASK-011
 
 ### Track A: Infrastructure (Infra Agent)
 ```
-EP-001 (remaining) ──▶ EP-015 ──▶ EP-016
-                          ▲
-                          └── Can start after EP-001 done
+EP-015 ──▶ EP-016 (independent of KE/Pipeline tracks)
 ```
 
 ### Track B: Knowledge Engine (KE Agent)
 ```
-EP-001 ──▶ EP-002 ──▶ EP-004
-               └──▶ EP-003 ──▶ EP-005 ──▶ EP-012
+EP-005 (remaining stores) ──▶ EP-012 (Learning Loop)
 ```
 
-### Track C: Schema Intelligence (Schema Intel Agent)
+### Track C: Query Pipeline (Pipeline Agent) — Critical Path
 ```
-EP-001 ──▶ EP-006 (depends on EP-002 + EP-003 but can start TASK-043 after TASK-008)
+EP-008 ──▶ EP-009 ──▶ EP-010 ──▶ EP-011
 ```
 
 ### Track D: Query Pipeline (Pipeline Agent)
@@ -434,8 +427,7 @@ EP-017 (independent, runs in parallel with all tracks)
 
 | Blocker | Location | Blocks | Since |
 |---------|----------|--------|-------|
-| No git commits | Root | All work unversioned | Sprint 0 |
-| Research spikes not started | EP-017 | EP-007 (TASK-056), EP-008 (TASK-065) | Start of Phase 4 |
+| Research spikes not started | EP-017 | EP-008 (TASK-065) | Start of Phase 4 |
 | Makefile Windows issue | Root | Developer onboarding | Sprint 0 |
 
 ---
@@ -443,27 +435,37 @@ EP-017 (independent, runs in parallel with all tracks)
 ## 7. Unblocking Priority Order
 
 ```
-Priority 1 ──▶ Git commit — version all work
-Priority 2 ──▶ EP-017 (Research Spikes) — must complete before EP-007/EP-008
-Priority 3 ──▶ TASK-009 (EP-002) — Schema Store data models (now unblocked)
-Priority 4 ──▶ TASK-016 (EP-003) — Qdrant client (parallel with EP-002)
-Priority 5 ──▶ Makefile Windows fix — developer experience
+Priority 1 ──▶ EP-008 (Intent & Planning) — next pipeline epic
+Priority 2 ──▶ EP-005 remaining (TASK-036 to TASK-041) — query history, feedback, config, metrics, audit, cache stores
+Priority 3 ──▶ EP-017 (Research Spikes) — SPIKE-001/002/003 for context and model router accuracy
+Priority 4 ──▶ Real EmbeddingService (replace mock BGE-M3)
 ```
 
-## 8. Newly Unblocked Tasks
+## 8. Current State — Completed Epics & Next Steps
 
-The following tasks are now **ready** (all dependencies met):
+### Completed Epics
+| Epic | Tasks | Status |
+|------|-------|--------|
+| EP-001 (Dev Environment) | 8/8 | ✅ Complete |
+| EP-002 (Schema Store) | 7/7 | ✅ Complete |
+| EP-003 (Vector Index) | 7/7 | ✅ Complete |
+| EP-004 (Knowledge Graph) | 6/6 | ✅ Complete |
+| EP-006 (Schema Intelligence) | 13/13 | ✅ Complete |
+| EP-007 (Context Retrieval) | 2/2 | ✅ Complete |
+| EP-018 (Core Services) | 3/3 | ✅ Complete |
 
-| Task | Epic | Agent | Dependencies |
-|------|------|-------|-------------|
-| **TASK-010** | EP-002 (Schema Store) | Knowledge Engine | TASK-009 ✅ |
-| **TASK-043** | EP-006 (Schema Intelligence) | Schema Intelligence | TASK-008 ✅ |
-| TASK-016 | EP-003 (Vector Index) | Knowledge Engine | TASK-001 ✅ |
-| TASK-017 | EP-003 (Vector Index) | Knowledge Engine | TASK-001 ✅ |
-| TASK-029 | EP-005 (KE API) | Knowledge Engine | TASK-001 ✅ |
-| TASK-102 | EP-013 (Public API) | API | EP-001 ✅ |
-| TASK-114 | EP-014 (Frontend) | Frontend | EP-001 ✅ |
-| TASK-126 | EP-015 (Multi-Tenant Infra) | Infrastructure | EP-001 ✅ |
-| TASK-135 | EP-016 (CI/CD) | Infrastructure | EP-001 ✅ |
+### In Progress
+| Epic | Tasks | Status |
+|------|-------|--------|
+| EP-005 (KE API) | 8/14 | 🏗️ In Progress |
 
-**Note**: Some tasks above (TASK-029, 102, 114, 126, 135) are structurally ready but their downstream dependencies (EP-002, EP-005, EP-011) limit how far they can proceed independently.
+### Ready to Start (All Dependencies Met)
+| Task | Epic | Agent | Deps Met |
+|------|------|-------|----------|
+| TASK-062 | EP-008 (Intent & Planning) | Query Pipeline | EP-007 ✅ |
+| TASK-036 | EP-005 (Query History routes) | KE | TASK-029 ✅ |
+| TASK-037 | EP-005 (Feedback routes) | KE | TASK-029 ✅ |
+| TASK-038 | EP-005 (Config routes) | KE | TASK-029 ✅ |
+| TASK-039 | EP-005 (Metrics routes) | KE | TASK-029 ✅ |
+| TASK-040 | EP-005 (Audit routes) | KE | TASK-029 ✅ |
+| TASK-041 | EP-005 (Cache wrapper) | KE | TASK-029 ✅ |

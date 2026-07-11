@@ -1,0 +1,219 @@
+{
+  "summary": {
+    "total_queries": 12,
+    "passed": 11,
+    "failed": 1,
+    "pass_rate": 91.7,
+    "average_score": 0.7774,
+    "total_duration_ms": 21373.2,
+    "avg_latency_ms": 1781.1,
+    "by_complexity": {
+      "simple": {
+        "count": 3,
+        "avg_score": 0.8722
+      },
+      "aggregation": {
+        "count": 2,
+        "avg_score": 0.8334
+      },
+      "filter": {
+        "count": 2,
+        "avg_score": 0.95
+      },
+      "join": {
+        "count": 2,
+        "avg_score": 0.425
+      },
+      "sort": {
+        "count": 2,
+        "avg_score": 0.7312
+      },
+      "complex": {
+        "count": 1,
+        "avg_score": 0.8333
+      }
+    }
+  },
+  "results": [
+    {
+      "overall": 0.8333,
+      "pattern_score": 0.6666666666666666,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 2,
+      "patterns_total": 3,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 133.4,
+      "sql": "SELECT * FROM users WHERE state = 'active';",
+      "id": "SIMPLE-001",
+      "query": "show me active users"
+    },
+    {
+      "overall": 0.95,
+      "pattern_score": 1.0,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 2,
+      "patterns_total": 2,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 184.9,
+      "sql": "SELECT * FROM products;",
+      "id": "SIMPLE-002",
+      "query": "list all products"
+    },
+    {
+      "overall": 0.8333,
+      "pattern_score": 0.6666666666666666,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 2,
+      "patterns_total": 3,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 78.9,
+      "sql": "SELECT * FROM customers WHERE state = 'new york';",
+      "id": "SIMPLE-003",
+      "query": "find customers from new york"
+    },
+    {
+      "overall": 0.95,
+      "pattern_score": 1.0,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 4,
+      "patterns_total": 4,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 125.4,
+      "sql": "SELECT SUM(revenue) FROM revenue GROUP BY quarter;",
+      "id": "AGG-001",
+      "query": "total revenue by quarter"
+    },
+    {
+      "overall": 0.7167,
+      "pattern_score": 0.3333333333333333,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 1,
+      "patterns_total": 3,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 76.8,
+      "sql": "SELECT * FROM employees;",
+      "id": "AGG-002",
+      "query": "how many employees in each department"
+    },
+    {
+      "overall": 0.95,
+      "pattern_score": 1.0,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 2,
+      "patterns_total": 2,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 74.3,
+      "sql": "SELECT * FROM orders WHERE signup_date = 'last month';",
+      "id": "FILTER-001",
+      "query": "orders placed last month"
+    },
+    {
+      "overall": 0.95,
+      "pattern_score": 1.0,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 4,
+      "patterns_total": 4,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 182.4,
+      "sql": "SELECT * FROM products WHERE stock_quantity = '0';",
+      "id": "FILTER-002",
+      "query": "products that are out of stock"
+    },
+    {
+      "overall": 0.6,
+      "pattern_score": 0.5,
+      "table_score": 0.5,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 1,
+      "patterns_total": 2,
+      "tables_found": 1,
+      "tables_total": 2,
+      "latency_ms": 6837.1,
+      "sql": "SELECT * FROM customers;",
+      "id": "JOIN-001",
+      "query": "top 10 customers by order volume"
+    },
+    {
+      "overall": 0.25,
+      "pattern_score": 0.0,
+      "table_score": 0.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 0,
+      "patterns_total": 2,
+      "tables_found": 0,
+      "tables_total": 2,
+      "latency_ms": 83.7,
+      "sql": "SELECT * FROM category WHERE product = 'active';",
+      "id": "JOIN-002",
+      "query": "total sales by product category"
+    },
+    {
+      "overall": 0.6875,
+      "pattern_score": 0.25,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 1,
+      "patterns_total": 4,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 6794.7,
+      "sql": "SELECT * FROM products;",
+      "id": "SORT-001",
+      "query": "top 5 most expensive products"
+    },
+    {
+      "overall": 0.775,
+      "pattern_score": 0.5,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 2,
+      "patterns_total": 4,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 71.8,
+      "sql": "SELECT MAX(first) FROM employees GROUP BY salary;",
+      "id": "SORT-002",
+      "query": "list employees by salary highest first"
+    },
+    {
+      "overall": 0.8333,
+      "pattern_score": 0.6666666666666666,
+      "table_score": 1.0,
+      "syntax_score": 1.0,
+      "style_score": 0.5,
+      "patterns_found": 2,
+      "patterns_total": 3,
+      "tables_found": 1,
+      "tables_total": 1,
+      "latency_ms": 6729.1,
+      "sql": "SELECT year FROM revenue WHERE signup_date = 'this year';",
+      "id": "COMPLEX-001",
+      "query": "monthly revenue trend for this year"
+    }
+  ]
+}

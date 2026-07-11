@@ -30,16 +30,16 @@ Implement the Knowledge Engine API service — the single internal interface thr
 | TASK-032 | Implement internal auth (service tokens) | P0 | TASK-029 | L | ✅ done |
 | TASK-033 | Implement Schema Store API routes | P0 | TASK-029, EP-002 | L | ✅ done |
 | TASK-034 | Implement Vector Index API routes | P0 | TASK-029, EP-003 | L | ✅ done |
-| TASK-035 | Implement Graph Store API routes | P1 | TASK-029, EP-004 | L | ⏳ blocked |
-| TASK-036 | Implement Query History store API routes | P0 | TASK-029 | M | ⏳ blocked |
-| TASK-037 | Implement Feedback store API routes | P0 | TASK-029 | M | ⏳ blocked |
-| TASK-038 | Implement Config store API routes | P1 | TASK-029 | M | ⏳ blocked |
-| TASK-039 | Implement Metrics store API routes | P1 | TASK-029 | M | ⏳ blocked |
-| TASK-040 | Implement Audit store API routes | P0 | TASK-029 | M | ⏳ blocked |
-| TASK-041 | Implement Cache store wrapper | P0 | TASK-029 | M | ⏳ blocked |
+| TASK-035 | Implement Graph Store API routes | P1 | TASK-029, EP-004 | L | ✅ done |
+| TASK-036 | Implement Query History store API routes | P0 | TASK-029 | M | ⏳ backlog |
+| TASK-037 | Implement Feedback store API routes | P0 | TASK-029 | M | ⏳ backlog |
+| TASK-038 | Implement Config store API routes | P1 | TASK-029 | M | ⏳ backlog |
+| TASK-039 | Implement Metrics store API routes | P1 | TASK-029 | M | ⏳ backlog |
+| TASK-040 | Implement Audit store API routes | P0 | TASK-029 | M | ⏳ backlog |
+| TASK-041 | Implement Cache store wrapper | P0 | TASK-029 | M | ⏳ backlog |
 | TASK-042 | Write integration tests for KE API | P0 | TASK-033 | XL | 🏗️ in progress |
 
-## Status: 🏗️ In Progress (TASK-029 through TASK-034 done, TASK-042 in progress)
+## Status: 🏗️ In Progress (10/14) — TASK-029 through TASK-035 done (schema, vector, graph routes), query routes added, TASK-042 in progress
 
 ## Acceptance Criteria
 - All 9 stores accessible through KE API

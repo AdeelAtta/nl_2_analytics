@@ -1,0 +1,5 @@
+# Local overrides
+data/
+*.egg-info/
+.coverage
+htmlcov/

@@ -25,17 +25,19 @@ Implement the Schema Intelligence Pipeline — the subsystem that connects to li
 |----|------|---|---|-----|
 | TASK-043 | Implement database connector interface | P0 | TASK-008 | M | ✅ Done |
 | TASK-044 | Implement PostgreSQL connector | P0 | TASK-043 | M | ✅ Done |
-| TASK-045 | Implement MySQL connector | P1 | TASK-043 | M |
-| TASK-046 | Implement Snowflake connector | P1 | TASK-043 | M |
-| TASK-047 | Implement BigQuery connector | P1 | TASK-043 | M |
-| TASK-048 | Implement DuckDB connector | P2 | TASK-043 | M |
+| TASK-045 | Implement MySQL connector | P1 | TASK-043 | M | ✅ Done |
+| TASK-046 | Implement Snowflake connector | P1 | TASK-043 | M | ✅ Done |
+| TASK-047 | Implement BigQuery connector | P1 | TASK-043 | M | ✅ Done |
+| TASK-048 | Implement DuckDB connector | P2 | TASK-043 | M | ✅ Done |
 | TASK-049 | Build DDL parser (sqlglot-based schema extraction) | P0 | TASK-043 | L | ✅ Done |
 | TASK-050 | Implement LLM description annotator | P0 | TASK-049 | XL | ✅ Done |
 | TASK-051 | Implement relationship inference engine | P0 | TASK-049 | L | ✅ Done |
 | TASK-052 | Build incremental sync orchestrator | P0 | TASK-050 | XL | ✅ Done |
 | TASK-053 | Implement schema-to-embedding pipeline | P0 | TASK-050, EP-003 | L | ✅ Done |
-| TASK-054 | Implement metadata-to-KE sync | P0 | TASK-052, EP-005 | L |
-| TASK-055 | Write unit and integration tests | P0 | TASK-050 | XL |
+| TASK-054 | Implement metadata-to-KE sync | P0 | TASK-052, EP-005 | L | ✅ Done |
+| TASK-055 | Write unit and integration tests | P0 | TASK-050 | XL | ✅ Done |
+
+## Status: ✅ Complete — All 13/13 tasks done
 
 ## Acceptance Criteria
 - PostgreSQL connector extracts full schema in < 10s for 200-table DB

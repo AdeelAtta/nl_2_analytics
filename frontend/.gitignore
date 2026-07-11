@@ -1,0 +1,5 @@
+# Local overrides
+.next/
+node_modules/
+out/
+*.tsbuildinfo

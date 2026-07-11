@@ -24,6 +24,7 @@ This document is the master blueprint for implementing the Enterprise Data Intel
 | **Agent-safe parallelism** | Tasks have clear ownership, defined module boundaries, no overlapping responsibilities |
 | **Architecture v1.0 is frozen** | Changes require documented ADRs in `/docs/decisions/` |
 | **Every task has a definition of done** | No ambiguous handoffs between agents |
+| **Epics** | 18 total (EP-001 through EP-018) — 8 complete, 1 in progress, 9 planned |
 
 ### 1.2 Directory Structure
 
@@ -89,6 +90,7 @@ This document is the master blueprint for implementing the Enterprise Data Intel
 | EP-015 | Multi-Tenant Infrastructure | P0 | EP-001 | M | Infrastructure |
 | EP-016 | CI/CD & Observability | P0 | EP-001 | M | Infrastructure |
 | EP-017 | Research Spikes | P0 | None | M | Research |
+| EP-018 | Core Services | P1 | EP-001 | S | Knowledge Engine |
 
 ### 1.4 Agent Assignments
 
@@ -367,8 +369,7 @@ Every task file uses this status convention:
 | `/docs/templates/template-adr.md` | Template: Architecture decision record | — |
 | `/docs/templates/template-bug.md` | Template: Bug report | — |
 | `/docs/templates/template-feature.md` | Template: Feature request | — |
-| `/docs/decisions/ADR-011-Tech-Stack.md` | ADR: Python/FastAPI/LangGraph stack | — |
-| `/docs/decisions/ADR-012-Config-Mgmt.md` | ADR: Configuration management approach | — |
+| `/docs/decisions/ADR-001-Knowledge-Engine-Architectural-Core.md` through `ADR-021-Multi-Turn-Session.md` | 21 ADRs covering architecture, tech stack, security, observability, and feature decisions | — |
 | `/docs/progress/status-dashboard.md` | Progress tracking dashboard | — |
 | `/docs/specifications/API-Specification.md` | OpenAPI contracts, error catalog | — |
 | `/docs/specifications/Database-Specification.md` | All DB schemas, indexes, partitions, RLS | — |

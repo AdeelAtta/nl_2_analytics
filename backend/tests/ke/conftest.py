@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -8,6 +9,8 @@ from uuid import uuid4
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from qdrant_client import AsyncQdrantClient
+
+os.environ.setdefault("KE_API_TOKEN", "ke_dev_token_2026")
 
 from app.core.database import get_qdrant, get_session
 from ke.api.main import create_ke_api

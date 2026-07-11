@@ -27,9 +27,9 @@ export function useSession(): { data: Session | null; status: "loading" | "authe
 }
 
 export function signIn(): void {
-  console.log("[Auth] signIn stub called");
+  /* stub — use useAuthStore instead */
 }
 
 export function signOut(): void {
-  console.log("[Auth] signOut stub called");
+  /* stub — use useAuthStore instead */
 }

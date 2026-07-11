@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -130,6 +131,18 @@ async def list_databases(
     )
 
 
+class CreateDatabaseRequest(BaseModel):
+    tenant_id: str = "default"
+    name: str
+    db_type: str = "postgresql"
+    host: str = "localhost"
+    port: int = 5432
+    database_name: str = ""
+    username: str = ""
+    password: str = ""
+    ssl_enabled: bool = False
+
+
 @router.get("/databases/{db_id}", response_model=KEResponse[DatabaseConfigModel])
 async def get_database(
     db_id: str,
@@ -139,6 +152,40 @@ async def get_database(
     if db is None:
         return error_response(KEErrorCode.ENTITY_NOT_FOUND, {"id": db_id})
     return success_response(db)
+
+
+@router.post("/databases", response_model=KEResponse[dict])
+async def create_database(
+    request: Request,
+    payload: CreateDatabaseRequest,
+    repo: DatabaseConfigRepository = Depends(_get_db_repo),
+):
+    import hashlib
+
+    tenant_id = getattr(request.state, "tenant_id", payload.tenant_id)
+    conn_str = f"{payload.db_type}://{payload.username}:{payload.password}@{payload.host}:{payload.port}/{payload.database_name}"
+    connection_hash = hashlib.sha256(conn_str.encode()).hexdigest()
+
+    from datetime import UTC, datetime
+
+    entry = await repo.create(DatabaseConfigModel(
+        id="",
+        tenant_id=tenant_id,
+        name=payload.name,
+        db_type=payload.db_type,
+        connection_hash=connection_hash,
+        host=payload.host,
+        port=payload.port,
+        database_name=payload.database_name,
+        username=payload.username,
+        ssl_enabled=payload.ssl_enabled,
+        sync_status="pending",
+        is_active=True,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    ))
+    return success_response({"id": entry.id, "name": entry.name,
+                             "connection_hash": connection_hash})
 
 
 @router.get("/schemas", response_model=KEListResponse[SchemaInfoModel])

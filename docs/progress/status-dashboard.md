@@ -4,7 +4,7 @@
 |----------|-------|
 | **Phase** | 3 (Planning) + 3.5 (Readiness Review) + Sprint 0 (Engineering Foundation) |
 | **Last Updated** | 2026-07-11 |
-| **Overall Status** | 🚀 **IMPLEMENTATION ACTIVE** — EP-001/EP-002/EP-003/EP-004 Complete, EP-005 8/14, EP-006 8/13 |
+| **Overall Status** | 🚀 **IMPLEMENTATION ACTIVE** — EP-001/EP-002/EP-003/EP-004/EP-006/EP-007/EP-018 Complete, EP-005 8/14 |
 | **Total Epics** | 17 |
 | **Total Tasks** | ~144 (12 documented, ~132 generated from epic task lists) |
 | **Planned Agents** | 7 |
@@ -20,9 +20,10 @@
 | EP-002 | KE — Schema Store | 7 | TASK-009 to TASK-015 | ✅ Complete | Knowledge Engine |
 | EP-003 | KE — Vector Index | 7 | TASK-016 to TASK-022 | ✅ Complete | Knowledge Engine |
 | EP-004 | KE — Knowledge Graph | 6 | TASK-023 to TASK-028 | ✅ Complete | Knowledge Engine |
-| EP-005 | KE — API Layer | 14 | TASK-029 to TASK-042 | 🏗️ In Progress | Knowledge Engine |
-| EP-006 | Schema Intelligence | 13 | TASK-043 to TASK-055 | 🏗️ In Progress (8/13) | Schema Intelligence |
-| EP-007 | Context Retrieval | 6 | TASK-056 to TASK-061 | ✅ Planned | Query Pipeline |
+| EP-005 | KE — API Layer | 14 | TASK-029 to TASK-042 | 🏗️ In Progress (8/14) | Knowledge Engine |
+| EP-006 | Schema Intelligence | 13 | TASK-043 to TASK-055 | ✅ Complete | Schema Intelligence |
+| EP-007 | Context Retrieval | 2 | TASK-042, TASK-043 | ✅ Complete | Query Pipeline |
+| EP-018 | Core Services | 3 | TASK-056 to TASK-058 | ✅ Complete | Knowledge Engine |
 | EP-008 | Intent & Planning | 5 | TASK-062 to TASK-066 | ✅ Planned | Query Pipeline |
 | EP-009 | NL2SQL Generation | 12 | TASK-067 to TASK-078 | ✅ Planned | Query Pipeline |
 | EP-010 | Guardrail Stack | 9 | TASK-079 to TASK-087 | ✅ Planned | Query Pipeline |
@@ -43,7 +44,7 @@
 | 7 Agent specifications | ✅ Done | /docs/agents/agent-*.md |
 | 12 Representative tasks | ✅ Done | /docs/tasks/TASK-*.md |
 | 4 Templates | ✅ Done | task, adr, bug, feature |
-| 2 ADRs | ✅ Done | ADR-011, ADR-012 |
+| 21 ADRs | ✅ Done | ADR-001 through ADR-021 |
 | Phase 1-2 docs | ✅ Complete | Already existed from Phase 1-2 |
 | AI-Agent-Specification.md | ✅ Done | 10-agent pipeline, QueryState, agent contracts |
 | API-Specification.md | ✅ Done | OpenAPI contracts, error catalog (ERR-001 to ERR-018) |
@@ -108,7 +109,7 @@
 
 | Risk | Mitigation |
 |------|-----------|
-| Research spikes could invalidate architecture assumptions | Three P0 spikes run before dependent epics start (EP-007, EP-008, EP-009) |
+| Research spikes could invalidate architecture assumptions | Three P0 spikes should run before EP-008 (Intent & Planning) begins |
 | Task count (~144) is high for initial planning | Only 12 are fully documented; remaining ~132 are listed in epic task tables and can be generated from templates |
 | Multi-agent merge conflicts on `/backend/shared/` | Shared interfaces owned by no single agent; changes require README review |
 | No git commits yet (Sprint 0 work unversioned) | `git add && git commit` needed before continuing to downstream epics |
@@ -146,3 +147,15 @@
 | EP-006 TASK-051 (Relationship Inference) | 2026-07-11 | NameBasedInferenceEngine with 3 strategies (naming 0.7, reverse 0.5, overlap 0.3) + self-reference (0.9) + junction (0.8) + score fusion. RelationshipInferenceService wrapper. 32 tests, 389 total pass. |
 | EP-006 TASK-052 (Sync Orchestrator) | 2026-07-11 | SyncOrchestrator: connects to DB, extracts schema, computes table signatures (DDL or column-based), detects added/changed/removed/unchanged tables, runs annotation + inference pipeline on changed tables, tracks SyncState across calls. 40 tests, 429 total pass. |
 | EP-006 TASK-053 (Schema Embedding Pipeline) | 2026-07-11 | SchemaEmbeddingPipeline: bridges schema_intelligence to KE vector store. Converts ExtractedTable + AnnotationResult + InferredRelationship → EmbeddingItems → embeddings → VectorPoints → Qdrant upsert. Handles ADDED/CHANGED (upsert) and REMOVED (delete). Tenant-isolated point IDs. 39 tests, 468 total pass. |
+| EP-006 TASK-054 (Metadata-to-KE Sync) | 2026-07-11 | MetadataSyncService syncs extracted schemas into KE stores (tenant, database, schema, tables, columns, relationships). POST /v1/ke/sync/sync endpoint. 7 tests. |
+| EP-006 TASK-055 (Integration Tests) | 2026-07-11 | 27 integration tests in test_schema_intelligence_integration.py: DuckDB end-to-end, annotation, inference, incremental sync, DDL override, schema filter, errors. |
+| EP-006 (Schema Intelligence) | 2026-07-11 | **Epic complete** — All 13 tasks done. 5 DB connectors, DDL parser, LLM annotator, relationship inference, sync orchestrator, embedding pipeline, metadata sync. |
+| EP-007 TASK-042 (Query Service Framework) | 2026-07-11 | QueryService — search_context(), get_table_context(), render_ddl(). Hybrid vector search via VectorRepository + EmbeddingService. POST /v1/ke/query/context, GET /v1/ke/query/context/table/{table_id}, POST /v1/ke/query/render-ddl, GET /v1/ke/query/discover. 21 tests. |
+| EP-007 TASK-043 (DDL Renderer) | 2026-07-11 | DDLRenderer — renders CREATE TABLE DDL with type mapping (25+ SQL types), PKs, FKs, NOT NULL, DEFAULT, descriptions. Parses structured vector point IDs for context enrichment. |
+| EP-007 (Context Retrieval) | 2026-07-11 | **Epic complete** — QueryService + DDLRenderer + Query API routes. 25 tests (21 + 4 API). |
+| EP-001 TASK-056 (Quality Score) | 2026-07-11 | QualityScoreService — computes overall score (0.0–1.0) + 4 dimensions (coverage, completeness, consistency, freshness) from TableRepository + ColumnRepository. 15 tests. |
+| EP-001 TASK-057 (PII Masking) | 2026-07-11 | PIIDetector — rule-based PII classification across 15 categories with sensitivity levels (high/medium/low). Normalizes delimiters for regex matching. 18 tests. |
+| EP-001 TASK-058 (Alerts) | 2026-07-11 | AlertService — event-based alert system with 5 categories, 4 severity levels, handler registration, tenant/category/severity filtering. 16 tests. |
+| TASK-015 (Schema Store Integration Tests) | 2026-07-11 | 22 PostgreSQL integration tests — TenantRepository (CRUD, soft/hard delete, slug lookups, pagination), DatabaseConfig, SchemaInfo, Table, Column (PK/FK/nullable), Relationship (source/target/inferred). BaseRepository.get/update/delete now filter soft-deleted records. 654 total tests pass. |
+| EP-018 (Core Services) | 2026-07-11 | TASK-056 (QualityScoreService), TASK-057 (PIIDetector), TASK-058 (AlertService) — 49 tests total, ruff clean. Created to document pre-existing orphan services. |
+| EP-013 TASK-107 (Public API query endpoint) | 2026-07-11 | POST /api/v1/query created with JWT auth, proxies to PipelineOrchestrator. MVP query endpoint now available on port 8100. |

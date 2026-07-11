@@ -1,0 +1,51 @@
+{
+  "title": "OpenQuery Overview",
+  "uid": "openquery-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "Request Rate",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "targets": [{"expr": "rate(http_requests_total[5m])", "legendFormat": "{{job}}"}]
+    },
+    {
+      "title": "Error Rate",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "targets": [{"expr": "rate(http_requests_total{status=~\"5..\"}[5m])", "legendFormat": "{{job}}"}]
+    },
+    {
+      "title": "P95 Latency",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "targets": [{"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{job}}"}]
+    },
+    {
+      "title": "Active Queries",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 8},
+      "targets": [{"expr": "sum(rate(http_requests_total[5m]))"}]
+    },
+    {
+      "title": "Memory Usage",
+      "type": "gauge",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 8},
+      "targets": [{"expr": "process_resident_memory_bytes"}]
+    },
+    {
+      "title": "Service Health",
+      "type": "table",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 8},
+      "targets": [{"expr": "up"}]
+    }
+  ]
+}

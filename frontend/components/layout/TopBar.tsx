@@ -1,7 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Moon, Sun, LogOut, User } from "lucide-react";
+import { Moon, Sun, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -12,20 +13,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSession } from "@/lib/auth";
+import { useAuthStore } from "@/stores/auth";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Sidebar } from "./Sidebar";
 import { Menu } from "lucide-react";
 
 export function TopBar() {
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { data: session } = useSession();
+  const userId = useAuthStore((s) => s.userId);
+  const email = useAuthStore((s) => s.email);
+  const name = useAuthStore((s) => s.name);
+  const tenantId = useAuthStore((s) => s.tenantId);
+  const logout = useAuthStore((s) => s.logout);
 
-  const initials = session?.user.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase() ?? "U";
+  const displayName = name || userId;
+  const initials = displayName.slice(0, 2).toUpperCase() ?? "U";
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
@@ -64,16 +67,13 @@ export function TopBar() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <span>{session?.user.name}</span>
-              <span className="text-xs text-muted-foreground">{session?.user.email}</span>
+              <span>{displayName}</span>
+              <span className="text-xs text-muted-foreground">{email || ""}</span>
+              <span className="text-xs text-muted-foreground">Tenant: {tenantId === "demo" ? "Demo" : tenantId.slice(0, 8)}</span>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { logout(); router.push("/auth/login"); }}>
             <LogOut className="mr-2 h-4 w-4" />
             Log out
           </DropdownMenuItem>

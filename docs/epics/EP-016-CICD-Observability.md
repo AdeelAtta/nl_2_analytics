@@ -25,16 +25,16 @@ Implement CI/CD pipelines and observability infrastructure — automated testing
 
 | ID | Name | P | Deps | Est |
 |----|------|---|---|-----|
-| TASK-135 | Create GitHub Actions CI workflow | P0 | EP-001 | L |
-| TASK-136 | Create GitHub Actions CD workflow | P1 | EP-015 | L |
-| TASK-137 | Configure Docker image registry | P0 | TASK-135 | M |
-| TASK-138 | Add health check endpoints to all services | P0 | EP-001 | M |
-| TASK-139 | Set up Prometheus + Grafana stack | P1 | EP-015 | L |
-| TASK-140 | Implement structured JSON logging | P0 | EP-001 | M |
-| TASK-141 | Configure Loki log aggregation | P2 | TASK-140 | M |
-| TASK-142 | Integrate Sentry for error tracking | P0 | EP-001 | M |
-| TASK-143 | Create Grafana dashboards | P1 | TASK-139 | L |
-| TASK-144 | Configure alerting rules | P1 | TASK-139 | M |
+| TASK-135 | Create GitHub Actions CI workflow | P0 | EP-001 | L | ✅ done (6 jobs: lint, typecheck, test, build, security, coverage) |
+| TASK-136 | Create GitHub Actions CD workflow | P1 | EP-015 | L | ✅ done (build + push to GHCR + deploy to K8s) |
+| TASK-137 | Configure Docker image registry | P0 | TASK-135 | M | ✅ done (GHCR configured in CD workflow) |
+| TASK-138 | Add health check endpoints to all services | P0 | EP-001 | M | ✅ done (live, ready, version on port 8100) |
+| TASK-139 | Set up Prometheus + Grafana stack | P1 | EP-015 | L | ✅ done (docker-compose with prometheus + grafana + loki) |
+| TASK-140 | Implement structured JSON logging | P0 | EP-001 | M | ✅ done (structlog with ISO timestamps + JSON output) |
+| TASK-141 | Configure Loki log aggregation | P2 | TASK-140 | M | ✅ done (loki config + docker-compose service + Grafana datasource) |
+| TASK-142 | Integrate Sentry for error tracking | P0 | EP-001 | M | ✅ done (sentry_sdk init in app factory, config via SENTRY_DSN) |
+| TASK-143 | Create Grafana dashboards | P1 | TASK-139 | L | ✅ done (overview dashboard with request rate, error rate, latency, memory, health) |
+| TASK-144 | Configure alerting rules | P1 | TASK-139 | M | ✅ done (4 alert rules: error rate, high latency, service down, memory) |
 
 ## Acceptance Criteria
 - CI pipeline runs on every push/PR: lint -> typecheck -> unit tests -> integration tests -> build

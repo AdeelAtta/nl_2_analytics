@@ -183,6 +183,8 @@ class BaseRepository[T]:
 
     async def get(self, id: str) -> T | None:
         stmt = select(self._orm_class).where(self._orm_class.id == id)
+        if hasattr(self._orm_class, "deleted_at"):
+            stmt = stmt.where(self._orm_class.deleted_at.is_(None))
         result = await self._session.execute(stmt)
         instance = result.scalar_one_or_none()
         if instance is None:
@@ -191,6 +193,8 @@ class BaseRepository[T]:
 
     async def update(self, id: str, data: dict[str, Any]) -> T | None:
         stmt = select(self._orm_class).where(self._orm_class.id == id)
+        if hasattr(self._orm_class, "deleted_at"):
+            stmt = stmt.where(self._orm_class.deleted_at.is_(None))
         result = await self._session.execute(stmt)
         instance = result.scalar_one_or_none()
         if instance is None:
@@ -206,6 +210,8 @@ class BaseRepository[T]:
 
     async def delete(self, id: str, hard: bool = False) -> bool:
         stmt = select(self._orm_class).where(self._orm_class.id == id)
+        if not hard and hasattr(self._orm_class, "deleted_at"):
+            stmt = stmt.where(self._orm_class.deleted_at.is_(None))
         result = await self._session.execute(stmt)
         instance = result.scalar_one_or_none()
         if instance is None:

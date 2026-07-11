@@ -1,398 +1,209 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
-from schema_intelligence.connectors.base import (
-    ExtractedColumn,
-    ExtractedTable,
-    ForeignKeyRef,
-)
-from schema_intelligence.inference.base import (
-    BaseInferenceEngine,
-    InferenceContext,
-    InferredRelationship,
-)
-from schema_intelligence.inference.engine import RelationshipInferenceService
-from schema_intelligence.inference.name_based import (
-    NameBasedInferenceEngine,
-    _is_compatible_type,
-    _is_integer_type,
-    _singularize,
+from ke.services.inference import (
+    HFInferenceClient,
+    InferenceFactory,
+    MockClient,
+    OpenAIClient,
 )
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def orders_customers_schema() -> list[ExtractedTable]:
-    return [
-        ExtractedTable(
-            name="customers",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="name", ordinal_position=2, data_type="VARCHAR(100)", is_nullable=True),
-                ExtractedColumn(name="email", ordinal_position=3, data_type="VARCHAR(255)", is_nullable=False),
-            ],
-        ),
-        ExtractedTable(
-            name="orders",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="BIGSERIAL", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="customer_id", ordinal_position=2, data_type="INT", is_nullable=False),
-                ExtractedColumn(name="total", ordinal_position=3, data_type="DECIMAL(12,2)", is_nullable=False),
-                ExtractedColumn(name="created_at", ordinal_position=4, data_type="TIMESTAMPTZ", is_nullable=False),
-            ],
-        ),
-    ]
-
-
-@pytest.fixture
-def junction_schema() -> list[ExtractedTable]:
-    return [
-        ExtractedTable(
-            name="users",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="name", ordinal_position=2, data_type="VARCHAR(100)", is_nullable=True),
-            ],
-        ),
-        ExtractedTable(
-            name="roles",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="name", ordinal_position=2, data_type="VARCHAR(50)", is_nullable=False),
-            ],
-        ),
-        ExtractedTable(
-            name="user_role_mapping",
-            columns=[
-                ExtractedColumn(name="user_id", ordinal_position=1, data_type="INT", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="role_id", ordinal_position=2, data_type="INT", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="created_at", ordinal_position=3, data_type="TIMESTAMP", is_nullable=False),
-            ],
-        ),
-    ]
-
-
-@pytest.fixture
-def self_ref_schema() -> list[ExtractedTable]:
-    return [
-        ExtractedTable(
-            name="employees",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="name", ordinal_position=2, data_type="VARCHAR(100)", is_nullable=True),
-                ExtractedColumn(name="manager_id", ordinal_position=3, data_type="INT", is_nullable=True),
-            ],
-        ),
-    ]
-
-
-@pytest.fixture
-def already_fk_schema() -> list[ExtractedTable]:
-    return [
-        ExtractedTable(
-            name="customers",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True),
-            ],
-        ),
-        ExtractedTable(
-            name="orders",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="BIGSERIAL", is_nullable=False, is_primary_key=True),
-                ExtractedColumn(name="customer_id", ordinal_position=2, data_type="INT", is_nullable=False, foreign_key=ForeignKeyRef(ref_table="customers", ref_column="id")),
-            ],
-        ),
-    ]
-
-
-@pytest.fixture
-def empty_schema() -> list[ExtractedTable]:
-    return [
-        ExtractedTable(
-            name="empty",
-            columns=[
-                ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True),
-            ],
-        ),
-    ]
-
-
-# ---------------------------------------------------------------------------
-# Test helpers
-# ---------------------------------------------------------------------------
-
-class TestHelpers:
-    def test_singularize_ies(self) -> None:
-        assert _singularize("categories") == "category"
-
-    def test_singularize_ses(self) -> None:
-        assert _singularize("processes") == "process"
-
-    def test_singularize_regular(self) -> None:
-        assert _singularize("customers") == "customer"
-
-    def test_singularize_no_s(self) -> None:
-        assert _singularize("customer") == "customer"
-
-    def test_singularize_ss(self) -> None:
-        assert _singularize("address") == "address"
-
-    def test_singularize_xes(self) -> None:
-        assert _singularize("boxes") == "box"
-
-    def test_is_integer_type_int(self) -> None:
-        assert _is_integer_type("INT") is True
-
-    def test_is_integer_type_serial(self) -> None:
-        assert _is_integer_type("SERIAL") is True
-
-    def test_is_integer_type_varchar(self) -> None:
-        assert _is_integer_type("VARCHAR(255)") is False
-
-    def test_is_compatible_type_same(self) -> None:
-        assert _is_compatible_type("INT", "INT") is True
-
-    def test_is_compatible_type_int_family(self) -> None:
-        assert _is_compatible_type("INT", "BIGINT") is True
-
-    def test_is_compatible_type_varchar_family(self) -> None:
-        assert _is_compatible_type("VARCHAR(255)", "TEXT") is True
-
-    def test_is_compatible_type_incompatible(self) -> None:
-        assert _is_compatible_type("INT", "VARCHAR") is False
-
-
-# ---------------------------------------------------------------------------
-# Test InferredRelationship / InferenceContext
-# ---------------------------------------------------------------------------
-
-class TestModels:
-    def test_inferred_relationship_defaults(self) -> None:
-        r = InferredRelationship(
-            source_table="a", source_column="x", target_table="b", target_column="y"
-        )
-        assert r.confidence == 1.0
-        assert r.strategy == "unknown"
-        assert r.relationship_type == "inferred"
-
-    def test_inference_context_defaults(self) -> None:
-        ctx = InferenceContext(tables=[])
-        assert ctx.naming_confidence == 0.7
-        assert ctx.min_confidence == 0.3
-
-    def test_base_engine_abc(self) -> None:
-        with pytest.raises(TypeError):
-            BaseInferenceEngine()  # type: ignore[abstract]
-
-
-# ---------------------------------------------------------------------------
-# Test NameBasedInferenceEngine
-# ---------------------------------------------------------------------------
-
-class TestNameBasedInferenceEngine:
-    def test_naming_heuristic(
-        self, orders_customers_schema: list[ExtractedTable]
-    ) -> None:
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=orders_customers_schema)
-        results = engine.infer(context)
-        rels = {(r.source_table, r.source_column, r.target_table): r for r in results}
-        assert ("orders", "customer_id", "customers") in rels
-        assert "naming_heuristic" in rels[("orders", "customer_id", "customers")].strategy
-
-    def test_reverse_naming(self) -> None:
-        tables = [
-            ExtractedTable(
-                name="customers",
-                columns=[ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True)],
-            ),
-            ExtractedTable(
-                name="orders",
-                columns=[ExtractedColumn(name="customers_id", ordinal_position=1, data_type="INT", is_nullable=True)],
-            ),
+class TestHFInferenceClient:
+    def test_parse_response_extracts_sql_from_text(self) -> None:
+        result = [
+            {"generated_text": "SELECT * FROM users WHERE id = 1;\nThe query returns all users with id = 1."},
         ]
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=tables)
-        results = engine.infer(context)
-        rels = {(r.source_table, r.source_column, r.target_table) for r in results}
-        assert ("orders", "customers_id", "customers") in rels
+        parsed = HFInferenceClient._parse_response(result, "prompt")
+        assert "SELECT * FROM users WHERE id = 1" in parsed
+        assert "The query returns" not in parsed
 
-    def test_self_reference(self, self_ref_schema: list[ExtractedTable]) -> None:
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=self_ref_schema)
-        results = engine.infer(context)
-        rels = {(r.source_table, r.source_column, r.target_table): r for r in results}
-        assert ("employees", "manager_id", "employees") in rels
-        assert rels[("employees", "manager_id", "employees")].strategy == "self_reference"
+    def test_parse_response_empty_list(self) -> None:
+        parsed = HFInferenceClient._parse_response([], "prompt")
+        assert parsed == ""
 
-    def test_junction_table(
-        self, junction_schema: list[ExtractedTable]
-    ) -> None:
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=junction_schema)
-        results = engine.infer(context)
-        rels = {(r.source_table, r.source_column, r.target_table): r for r in results}
-        assert ("user_role_mapping", "user_id", "users") in rels
-        assert ("user_role_mapping", "role_id", "roles") in rels
-        rel_types = {r.relationship_type for r in results if r.source_table == "user_role_mapping"}
-        assert "junction" in rel_types
-
-    def test_existing_fk_excluded(
-        self, already_fk_schema: list[ExtractedTable]
-    ) -> None:
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=already_fk_schema)
-        results = engine.infer(context)
-        for r in results:
-            assert not (
-                r.source_table == "orders"
-                and r.source_column == "customer_id"
-                and r.target_table == "customers"
-            )
-
-    def test_empty_schema(self, empty_schema: list[ExtractedTable]) -> None:
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=empty_schema)
-        results = engine.infer(context)
-        assert results == []
-
-    def test_score_fusion(self) -> None:
-        tables = [
-            ExtractedTable(
-                name="products",
-                columns=[ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True)],
-            ),
-            ExtractedTable(
-                name="orders",
-                columns=[
-                    ExtractedColumn(name="id", ordinal_position=1, data_type="BIGSERIAL", is_nullable=False, is_primary_key=True),
-                    ExtractedColumn(name="products_id", ordinal_position=2, data_type="INT", is_nullable=True),
-                ],
-            ),
-            ExtractedTable(
-                name="inventory",
-                columns=[ExtractedColumn(name="product_id", ordinal_position=1, data_type="INT", is_nullable=True)],
-            ),
+    def test_parse_response_returns_only_sql(self) -> None:
+        result = [
+            {"generated_text": "    SELECT id, name FROM users WHERE active = true;\n\n-- end of query"},
         ]
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=tables)
-        results = engine.infer(context)
-        # orders.products_id -> products.id should be inferred by both naming and reverse naming
-        for r in results:
-            if (r.source_table, r.source_column, r.target_table) == ("orders", "products_id", "products"):
-                assert "+" in r.strategy
-                assert r.confidence > 0.7
+        parsed = HFInferenceClient._parse_response(result, "prompt")
+        assert "SELECT id, name FROM users" in parsed
 
-    def test_min_confidence_filter(self) -> None:
-        tables = [
-            ExtractedTable(
-                name="a",
-                columns=[ExtractedColumn(name="id", ordinal_position=1, data_type="INT", is_nullable=False, is_primary_key=True)],
-            ),
-            ExtractedTable(
-                name="b",
-                columns=[ExtractedColumn(name="a_col", ordinal_position=1, data_type="INT", is_nullable=True)],
-            ),
-        ]
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=tables, min_confidence=0.5)
-        results = engine.infer(context)
-        for r in results:
-            assert r.confidence >= 0.5
+    def test_parse_response_dict_format(self) -> None:
+        result = {"generated_text": "SELECT 1"}
+        parsed = HFInferenceClient._parse_response(result, "prompt")
+        assert parsed == "SELECT 1"
 
-    def test_no_false_positives(self) -> None:
-        tables = [
-            ExtractedTable(
-                name="products",
-                columns=[ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True)],
-            ),
-            ExtractedTable(
-                name="users",
-                columns=[
-                    ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True),
-                    ExtractedColumn(name="name", ordinal_position=2, data_type="VARCHAR(100)", is_nullable=True),
-                ],
-            ),
-        ]
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=tables)
-        results = engine.infer(context)
-        assert len(results) == 0  # No *_id columns to match
+    @pytest.mark.asyncio
+    async def test_generate_calls_hf_api(self) -> None:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = [{"generated_text": "SELECT * FROM test"}]
 
-    def test_plural_table_name(self) -> None:
-        tables = [
-            ExtractedTable(
-                name="users",
-                columns=[ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True)],
-            ),
-            ExtractedTable(
-                name="orders",
-                columns=[ExtractedColumn(name="user_id", ordinal_position=1, data_type="INT", is_nullable=True)],
-            ),
-        ]
-        engine = NameBasedInferenceEngine()
-        context = InferenceContext(tables=tables)
-        results = engine.infer(context)
-        rels = {(r.source_table, r.source_column, r.target_table) for r in results}
-        assert ("orders", "user_id", "users") in rels
+        async def mock_post(*args, **kwargs):
+            return mock_resp
+
+        with patch("httpx.AsyncClient") as MockClient:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_instance.post.return_value = mock_resp
+            mock_instance.post.side_effect = lambda *a, **kw: AsyncMock() if False else mock_resp
+            MockClient.return_value = mock_instance
+
+            client = HFInferenceClient("test-model", cost=0.0)
+            result = await client.generate("test prompt")
+
+            assert result == "SELECT * FROM test"
+
+    @pytest.mark.asyncio
+    async def test_generate_http_error_raises(self) -> None:
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = Exception("HTTP 503")
+
+        async def mock_post(*args, **kwargs):
+            return mock_resp
+
+        with patch("httpx.AsyncClient") as MockClient:
+            mock_instance = AsyncMock()
+            mock_instance.__aenter__.return_value = mock_instance
+            mock_instance.post.return_value = mock_resp
+            MockClient.return_value = mock_instance
+
+            client = HFInferenceClient("test-model", cost=0.0)
+            with pytest.raises(Exception, match="HTTP 503"):
+                await client.generate("test prompt")
+
+    def test_model_name_property(self) -> None:
+        client = HFInferenceClient("defog/sqlcoder-7b-2")
+        assert client.model_name == "defog/sqlcoder-7b-2"
+
+    def test_cost_property(self) -> None:
+        client = HFInferenceClient("test-model", cost=0.005)
+        assert client.cost_per_query == 0.005
 
 
-# ---------------------------------------------------------------------------
-# Test RelationshipInferenceService
-# ---------------------------------------------------------------------------
+class TestOpenAIClient:
+    @pytest.mark.asyncio
+    async def test_generate_returns_sql(self) -> None:
+        mock_choice = MagicMock()
+        mock_choice.message.content = "SELECT * FROM users"
+        mock_resp = MagicMock()
+        mock_resp.choices = [mock_choice]
 
-class TestRelationshipInferenceService:
-    def test_infer_basic(
-        self, orders_customers_schema: list[ExtractedTable]
-    ) -> None:
-        service = RelationshipInferenceService()
-        results = service.infer(orders_customers_schema)
-        assert len(results) >= 1
+        with (
+            patch("openai.AsyncOpenAI") as MockOA,
+            patch("ke.services.inference.get_settings") as mock_settings,
+        ):
+            mock_settings.return_value.openai_api_key = "sk-test"
+            mock_settings.return_value.openai_org_id = ""
+            mock_instance = MagicMock()
+            mock_instance.chat.completions.create = AsyncMock(return_value=mock_resp)
+            MockOA.return_value = mock_instance
 
-    def test_infer_junction(
-        self, junction_schema: list[ExtractedTable]
-    ) -> None:
-        service = RelationshipInferenceService()
-        results = service.infer(junction_schema)
-        assert len(results) >= 2
+            client = OpenAIClient("gpt-4o", cost=0.01)
+            result = await client.generate("show me users")
 
-    def test_custom_threshold(
-        self, orders_customers_schema: list[ExtractedTable]
-    ) -> None:
-        service = RelationshipInferenceService(min_confidence=0.8)
-        results = service.infer(orders_customers_schema)
-        for r in results:
-            assert r.confidence >= 0.8
+            assert result == "SELECT * FROM users"
 
-    def test_custom_confidence_scores(self) -> None:
-        tables = [
-            ExtractedTable(
-                name="a",
-                columns=[ExtractedColumn(name="id", ordinal_position=1, data_type="SERIAL", is_nullable=False, is_primary_key=True)],
-            ),
-            ExtractedTable(
-                name="b",
-                columns=[ExtractedColumn(name="a_id", ordinal_position=1, data_type="INT", is_nullable=True)],
-            ),
-        ]
-        service = RelationshipInferenceService(naming_confidence=0.5)
-        results = service.infer(tables)
-        a_id_rel = [r for r in results if r.source_column == "a_id"]
-        assert len(a_id_rel) == 1
-        assert "naming_heuristic" in a_id_rel[0].strategy
-        assert a_id_rel[0].confidence == 0.7  # fused: naming(0.5) + reverse_naming(0.5) + fusion_bonus(0.2)
+    @pytest.mark.asyncio
+    async def test_generate_no_api_key_returns_message(self) -> None:
+        with patch("ke.services.inference.get_settings") as mock_settings:
+            mock_settings.return_value.openai_api_key = ""
+            mock_settings.return_value.openai_org_id = ""
+            client = OpenAIClient("gpt-4o")
+            result = await client.generate("test")
+            assert "no openai api key" in result
 
-    def test_empty_input(self) -> None:
-        service = RelationshipInferenceService()
-        results = service.infer([])
-        assert results == []
+    def test_model_name_property(self) -> None:
+        client = OpenAIClient("gpt-4o")
+        assert client.model_name == "gpt-4o"
 
-    def test_no_duplicates(self, junction_schema: list[ExtractedTable]) -> None:
-        service = RelationshipInferenceService()
-        results = service.infer(junction_schema)
-        keys = {(r.source_table, r.source_column, r.target_table, r.target_column) for r in results}
-        assert len(keys) == len(results)
+    def test_cost_property(self) -> None:
+        client = OpenAIClient("gpt-4o", cost=0.02)
+        assert client.cost_per_query == 0.02
+
+
+class TestMockClient:
+    @pytest.mark.asyncio
+    async def test_generate_extracts_user_request(self) -> None:
+        client = MockClient()
+        result = await client.generate("User Request: show me active users")
+        assert "active users" in result
+        assert result.startswith("SELECT * FROM mock_table")
+
+    @pytest.mark.asyncio
+    async def test_generate_falls_back_to_simple_pattern(self) -> None:
+        client = MockClient()
+        result = await client.generate("Generate a SQL query for: count orders")
+        assert "count orders" in result
+
+    @pytest.mark.asyncio
+    async def test_generate_no_match(self) -> None:
+        client = MockClient()
+        result = await client.generate("just a random string without patterns")
+        assert result == "SELECT * FROM mock_table WHERE query LIKE '%%'"
+
+    def test_model_name_property(self) -> None:
+        client = MockClient("my-mock")
+        assert client.model_name == "my-mock"
+
+    def test_cost_property(self) -> None:
+        client = MockClient(cost=0.001)
+        assert client.cost_per_query == 0.001
+
+
+class TestInferenceFactory:
+    def test_create_huggingface(self) -> None:
+        with patch("ke.services.inference.get_settings") as mock_settings:
+            mock_settings.return_value.hf_token = "test-token"
+            mock_settings.return_value.openai_api_key = ""
+            client = InferenceFactory.create("huggingface", "defog/sqlcoder-7b-2", 0.0001)
+            assert isinstance(client, HFInferenceClient)
+            assert client.model_name == "defog/sqlcoder-7b-2"
+            assert client.cost_per_query == 0.0001
+
+    def test_create_openai(self) -> None:
+        with patch("ke.services.inference.get_settings") as mock_settings:
+            mock_settings.return_value.hf_token = ""
+            mock_settings.return_value.openai_api_key = "sk-test"
+            client = InferenceFactory.create("openai", "gpt-4o", 0.01)
+            assert isinstance(client, OpenAIClient)
+            assert client.model_name == "gpt-4o"
+
+    def test_create_mock(self) -> None:
+        client = InferenceFactory.create("mock", "fallback", 0.0)
+        assert isinstance(client, MockClient)
+        assert client.model_name == "fallback"
+
+    def test_create_unknown_provider_falls_to_mock(self) -> None:
+        client = InferenceFactory.create("unknown_provider", "x", 0.0)
+        assert isinstance(client, MockClient)
+
+    def test_create_huggingface_no_model(self) -> None:
+        client = InferenceFactory.create("huggingface", None, 0.0)
+        assert isinstance(client, MockClient)
+
+    def test_create_huggingface_no_token_falls_to_mock(self) -> None:
+        with patch("ke.services.inference.get_settings") as mock_settings:
+            mock_settings.return_value.hf_token = ""
+            mock_settings.return_value.openai_api_key = ""
+            client = InferenceFactory.create("huggingface", "test-model", 0.0)
+            assert isinstance(client, MockClient)
+
+    def test_create_openai_no_key_falls_to_mock(self) -> None:
+        with patch("ke.services.inference.get_settings") as mock_settings:
+            mock_settings.return_value.hf_token = ""
+            mock_settings.return_value.openai_api_key = ""
+            client = InferenceFactory.create("openai", "gpt-4o", 0.0)
+            assert isinstance(client, MockClient)
+
+    def test_register_custom_client(self) -> None:
+        class CustomClient(MockClient):
+            pass
+
+        InferenceFactory.register("custom", CustomClient)
+        client = InferenceFactory.create("custom", "test", 0.0)
+        assert isinstance(client, CustomClient)

@@ -27,18 +27,20 @@ Implement the Public REST API gateway (port 8100) that exposes the platform's ca
 
 | ID | Name | P | Deps | Est |
 |----|------|---|---|-----|
-| TASK-102 | Scaffold Public API FastAPI service | P0 | EP-001 | M |
-| TASK-103 | Implement JWT auth middleware | P0 | TASK-102 | L |
-| TASK-104 | Implement API key auth | P1 | TASK-103 | M |
-| TASK-105 | Implement rate limiting middleware | P0 | TASK-102 | M |
-| TASK-106 | Implement CORS configuration | P0 | TASK-102 | S |
-| TASK-107 | Implement query endpoint | P0 | TASK-102, EP-011 | L |
-| TASK-108 | Implement schema exploration endpoints | P0 | TASK-102, EP-005 | L |
-| TASK-109 | Implement history endpoints | P1 | TASK-102 | M |
-| TASK-110 | Implement feedback endpoints | P0 | TASK-102 | M |
-| TASK-111 | Implement admin endpoints | P1 | TASK-102 | L |
-| TASK-112 | Add request/response logging middleware | P0 | TASK-102 | M |
-| TASK-113 | Write unit and integration tests | P0 | TASK-107 | XL |
+| TASK-102 | Scaffold Public API FastAPI service | P0 | EP-001 | M | ✅ done (existing) |
+| TASK-103 | Implement JWT auth middleware | P0 | TASK-102 | L | ✅ done (jwt.py, dependencies.py exist) |
+| TASK-104 | Implement API key auth | P1 | TASK-103 | M | ✅ done (2026-07-11) — `x-api-key` header, configurable via `API_KEYS` env var |
+| TASK-105 | Implement rate limiting middleware | P0 | TASK-102 | M | ✅ done (rate_limit.py exists) |
+| TASK-106 | Implement CORS configuration | P0 | TASK-102 | S | ✅ done (cors.py exists) |
+| TASK-107 | Implement query endpoint | P0 | TASK-102, EP-011 | L | ✅ done (2026-07-11) |
+| TASK-108 | Implement schema exploration endpoints | P0 | TASK-102, EP-005 | L | ✅ done (2026-07-11) |
+| TASK-109 | Implement history endpoints | P1 | TASK-102 | M | ✅ done (2026-07-11) |
+| TASK-110 | Implement feedback endpoints | P0 | TASK-102 | M | ✅ done (2026-07-11) |
+| TASK-111 | Implement admin endpoints | P1 | TASK-102 | L | ✅ done (2026-07-11) |
+| TASK-112 | Add request/response logging middleware | P0 | TASK-102 | M | ✅ done (structlog middleware exists) |
+| TASK-113a | Implement demo-login auth endpoint | P0 | TASK-102 | S | ✅ done (2026-07-11) |
+| TASK-113b | Write Public API tests | P0 | TASK-107 | M | ✅ done (test_public_api.py — 17 tests) |
+| TASK-113 | Write remaining integration tests | P0 | TASK-107 | XL | 🟡 partial (17 API tests done) |
 
 ## Acceptance Criteria
 - All endpoints from API-Design.md implemented

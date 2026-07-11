@@ -1,6 +1,10 @@
+import logging
+import uuid
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -25,13 +29,34 @@ class Settings(BaseSettings):
     qdrant_api_key: str = ""
 
     # Auth
-    jwt_secret: str = "change-me-in-production"
-    jwt_algorithm: str = "RS256"
+    jwt_secret: str = ""
+    jwt_algorithm: str = "HS256"
     jwt_token_ttl: int = 3600
+    api_keys: list[str] = []
 
     # Observability
-    otel_endpoint: str = "http://localhost:4318"
+    otel_endpoint: str = ""
+    otel_service_name: str = "ke-api"
+    enable_tracing: bool = True
     log_level: str = "INFO"
+    sentry_dsn: str = ""
+    enable_sentry: bool = False
+
+    # Prometheus
+    enable_metrics: bool = True
+    metrics_endpoint: str = "/metrics"
+
+    # Embeddings (Hugging Face)
+    hf_token: str = ""
+    embedding_model: str = "BAAI/bge-m3"
+    embedding_dimension: int = 1024
+
+    # LLM Inference
+    openai_api_key: str = ""
+    openai_org_id: str = ""
+
+    # KE API (internal service)
+    ke_api_url: str = "http://localhost:8200"
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
@@ -39,4 +64,37 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    _validate_settings(settings)
+    return settings
+
+
+_DEFAULT_CREDENTIAL_WORDS = ("openquery_dev", "localhost", "change-me")
+
+
+def _validate_settings(settings: Settings) -> None:
+    if not settings.jwt_secret:
+        generated = uuid.uuid4().hex
+        logger.warning(
+            "JWT_SECRET not set. Generated ephemeral secret: %s. "
+            "Set JWT_SECRET environment variable for production.",
+            generated,
+        )
+        settings.jwt_secret = generated
+
+    is_prod = settings.environment == "production"
+    if is_prod:
+        checks = (("POSTGRES_DSN", settings.postgres_dsn), ("REDIS_URL", settings.redis_url))
+        for dsn_name, dsn in checks:
+            if dsn and any(w in dsn.lower() for w in _DEFAULT_CREDENTIAL_WORDS):
+                logger.warning(
+                    "%s appears to use default credentials. "
+                    "Set a strong password via environment variable for production.",
+                    dsn_name,
+                )
+        weak_jwt = any(w in settings.jwt_secret.lower() for w in ("change", "secret", "default"))
+        if settings.jwt_secret and weak_jwt:
+            logger.warning(
+                "JWT_SECRET appears to be a weak default. "
+                "Set a strong random value via environment variable."
+            )

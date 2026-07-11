@@ -46,5 +46,5 @@ def test_settings_cors_origins() -> None:
 
 def test_settings_jwt_defaults() -> None:
     settings = Settings()
-    assert settings.jwt_algorithm == "RS256"
-    assert settings.jwt_secret == "change-me-in-production"
+    assert settings.jwt_algorithm == "HS256"
+    assert settings.jwt_secret == ""

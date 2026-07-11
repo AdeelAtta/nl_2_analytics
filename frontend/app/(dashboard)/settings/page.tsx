@@ -1,5 +1,10 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConnectDatabase } from "@/components/settings/ConnectDatabase";
+import { ApiKeyManager } from "@/components/settings/ApiKeyManager";
+import { TeamManagement } from "@/components/settings/TeamManagement";
 
 export default function SettingsPage() {
   return (
@@ -9,54 +14,31 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your account and preferences</p>
       </div>
 
-      <Tabs defaultValue="general">
+      <Tabs defaultValue="connections">
         <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="api-keys">API Keys</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
         </TabsList>
-        <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>Coming in Sprint 3</CardTitle>
-              <CardDescription>
-                General settings including profile management, preferences, and notification
-                configuration will be available in Sprint 3.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                User profile, preferences, and notification settings.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
         <TabsContent value="connections">
-          <Card>
-            <CardHeader>
-              <CardTitle>Coming in Sprint 1</CardTitle>
-              <CardDescription>
-                Database connection management will be available in Sprint 1.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Add, edit, and remove database connections.
-              </p>
-            </CardContent>
-          </Card>
+          <ConnectDatabase />
+        </TabsContent>
+        <TabsContent value="team">
+          <TeamManagement />
+        </TabsContent>
+        <TabsContent value="api-keys">
+          <ApiKeyManager />
         </TabsContent>
         <TabsContent value="appearance">
           <Card>
             <CardHeader>
-              <CardTitle>Coming in Sprint 1</CardTitle>
-              <CardDescription>
-                Theme and appearance customization will be available in Sprint 1.
-              </CardDescription>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>Customize the look and feel</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Light/dark mode toggle and UI customization.
+                Theme customization will be available soon.
               </p>
             </CardContent>
           </Card>

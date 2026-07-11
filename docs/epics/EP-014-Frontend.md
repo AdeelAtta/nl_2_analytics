@@ -27,18 +27,18 @@ Build the web application — a modern React 19 + Next.js 15 interface that prov
 
 | ID | Name | P | Deps | Est |
 |----|------|---|---|-----|
-| TASK-114 | Scaffold Next.js 15 project | P0 | EP-001 | M |
-| TASK-115 | Install and configure shadcn/ui + Tailwind | P0 | TASK-114 | M |
-| TASK-116 | Implement design system (themes, tokens, typography) | P0 | TASK-115 | L |
-| TASK-117 | Build API client library | P0 | TASK-114, EP-013 | L |
-| TASK-118 | Implement Zustand state management stores | P0 | TASK-114 | L |
-| TASK-119 | Build chat interface | P0 | TASK-117 | XL |
-| TASK-120 | Build schema browser | P1 | TASK-117 | L |
-| TASK-121 | Build query history sidebar | P1 | TASK-117 | M |
-| TASK-122 | Build settings pages | P1 | TASK-117 | L |
-| TASK-123 | Build admin dashboard | P2 | TASK-117 | XL |
-| TASK-124 | Build authentication UI | P0 | TASK-117 | M |
-| TASK-125 | Write unit and integration tests | P0 | TASK-119 | XL |
+| TASK-114 | Scaffold Next.js 15 project | P0 | EP-001 | M | ✅ done |
+| TASK-115 | Install and configure shadcn/ui + Tailwind | P0 | TASK-114 | M | ✅ done |
+| TASK-116 | Implement design system (themes, tokens, typography) | P0 | TASK-115 | L | ✅ done |
+| TASK-117 | Build API client library | P0 | TASK-114, EP-013 | L | ✅ done |
+| TASK-118 | Implement Zustand state management stores | P0 | TASK-114 | L | ✅ done (app, auth, query) |
+| TASK-119 | Build chat interface | P0 | TASK-117 | XL | ✅ done (ChatInput, ChatMessage, SqlResult) |
+| TASK-120 | Build schema browser | P1 | TASK-117 | L | ✅ done (SchemaBrowser with search + column view) |
+| TASK-121 | Build query history sidebar | P1 | TASK-117 | M | ✅ done (HistorySidebar with click-to-replay) |
+| TASK-122 | Build settings pages | P1 | TASK-117 | L | ✅ done (ConnectDatabase + appearance) |
+| TASK-123 | Build admin dashboard | P2 | TASK-117 | XL | ✅ done (health monitoring cards) |
+| TASK-124 | Build authentication UI | P0 | TASK-117 | M | ✅ done (demo-login page) |
+| TASK-125 | Write unit and integration tests | P0 | TASK-119 | XL | ✅ done (6 vitest tests) |
 
 ## Acceptance Criteria
 - Chat interface renders with message list and input

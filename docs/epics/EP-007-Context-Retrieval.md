@@ -20,14 +20,28 @@ Implement the Context Retrieval Agent — the subsystem that retrieves relevant 
 
 ## Tasks
 
-| ID | Name | P | Deps | Est |
-|----|------|---|---|-----|
-| TASK-056 | Implement query embedding service | P0 | EP-003 | M |
-| TASK-057 | Build hybrid retriever (vector + keyword + graph) | P0 | TASK-056, EP-005 | XL |
-| TASK-058 | Implement context ranking and deduplication | P0 | TASK-057 | L |
-| TASK-059 | Build context window trimmer | P0 | TASK-058 | M |
-| TASK-060 | Implement query result cache | P1 | TASK-057 | M |
-| TASK-061 | Write unit and integration tests | P0 | TASK-057 | L |
+| ID | Name | P | Deps | Est | Status |
+|----|------|---|---|------|--------|
+| TASK-042 | Build QueryService (hybrid context search + DDL enrichment) | P0 | EP-005, EP-003 | XL | ✅ done |
+| TASK-043 | Build DDLRenderer + Discover endpoint | P0 | EP-005 | L | ✅ done |
+
+### Original plan tasks (superseded by TASK-042/043)
+
+| ID | Name | P | Deps | Est | Status |
+|----|------|---|---|------|--------|
+| TASK-056 | Implement query embedding service | P0 | EP-003 | M | ⏳ merged into TASK-042 |
+| TASK-057 | Build hybrid retriever | P0 | TASK-056, EP-005 | XL | ⏳ merged into TASK-042 |
+| TASK-058 | Implement context ranking and dedup | P0 | TASK-057 | L | ⏳ not started |
+| TASK-059 | Build context window trimmer | P0 | TASK-058 | M | ⏳ not started |
+| TASK-060 | Implement query result cache | P1 | TASK-057 | M | ⏳ not started |
+| TASK-061 | Write unit and integration tests | P0 | TASK-057 | L | ⏳ merged into TASK-042 |
+
+## Status: 🏗️ Partially Complete — QueryService + DDLRenderer + 4 query endpoints built (25 tests). Remaining: ranking/dedup, window trimmer, cache.
+
+## What was built
+- `backend/ke/services/query.py` — QueryService (hybrid vector search + DDL enrichment), DDLRenderer (CREATE TABLE rendering with type mapping, PKs, FKs, constraints)
+- `backend/ke/api/routes/query.py` — 4 endpoints: POST /v1/ke/query/context, GET /v1/ke/query/context/table/{table_id}, POST /v1/ke/query/render-ddl, GET /v1/ke/query/discover
+- 21 service tests + 4 API tests (25 total)
 
 ## Acceptance Criteria
 - Retrieves relevant schema context for 90%+ of test queries

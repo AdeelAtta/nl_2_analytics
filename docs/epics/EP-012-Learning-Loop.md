@@ -6,6 +6,8 @@ Epic ID: **EP-012** | Priority: **P1** | Dependencies: **EP-005, EP-011** | Comp
 
 Implement the Learning Loop — the asynchronous feedback processing pipeline that transforms user feedback and query logs into Knowledge Engine improvements. This is the closed-loop self-learning mechanism.
 
+## Status: ✅ Complete — All 7/7 tasks done
+
 ## Goals
 - Feedback collection via KE Feedback Store
 - Feedback validation (reject spam, check consistency)
@@ -24,13 +26,13 @@ Implement the Learning Loop — the asynchronous feedback processing pipeline th
 
 | ID | Name | P | Deps | Est |
 |----|------|---|---|-----|
-| TASK-095 | Implement feedback collector | P0 | EP-005 | M |
-| TASK-096 | Build feedback validator and deduplicator | P0 | TASK-095 | L |
-| TASK-097 | Implement Q&A pair builder | P1 | TASK-095 | L |
-| TASK-098 | Implement schema enricher | P1 | TASK-095 | L |
-| TASK-099 | Implement pattern miner | P1 | TASK-095 | L |
-| TASK-100 | Build batch scheduler (5-min cycle) | P0 | TASK-095 | M |
-| TASK-101 | Write unit and integration tests | P0 | TASK-095 | L |
+| TASK-095 | Implement feedback collector | P0 | EP-005 | M | ✅ done |
+| TASK-096 | Build feedback validator and deduplicator | P0 | TASK-095 | L | ✅ done |
+| TASK-097 | Implement Q&A pair builder | P1 | TASK-095 | L | ✅ done |
+| TASK-098 | Implement schema enricher | P1 | TASK-095 | L | ✅ done |
+| TASK-099 | Implement pattern miner | P1 | TASK-095 | L | ✅ done |
+| TASK-100 | Build batch scheduler (5-min cycle) | P0 | TASK-095 | M | ✅ done |
+| TASK-101 | Write unit and integration tests | P0 | TASK-095 | L | ✅ done |
 
 ## Acceptance Criteria
 - Feedback collected, validated, deduplicated within 5-minute batch cycle
