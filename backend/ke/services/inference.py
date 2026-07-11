@@ -31,7 +31,7 @@ class HFInferenceClient(ModelClient):
         self._model_id = model_id
         self._cost = cost
         self._token = settings.hf_token
-        self._api_url = f"https://api-inference.huggingface.co/models/{model_id}"
+        self._api_url = "https://router.huggingface.co/v1/chat/completions"
 
     @property
     def model_name(self) -> str:
@@ -48,12 +48,10 @@ class HFInferenceClient(ModelClient):
         headers = {"Authorization": f"Bearer {self._token}", "Content-Type": "application/json"}
 
         payload = {
-            "inputs": prompt,
-            "parameters": {
-                "max_new_tokens": max_tokens,
-                "temperature": temperature,
-                "return_full_text": False,
-            },
+            "model": self._model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": temperature,
         }
 
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -62,15 +60,11 @@ class HFInferenceClient(ModelClient):
                     resp = await client.post(self._api_url, json=payload, headers=headers)
                     if resp.status_code == 503:
                         import asyncio
-                        wait = 2 ** attempt
-                        await asyncio.sleep(wait)
+                        await asyncio.sleep(2 ** attempt)
                         continue
                     resp.raise_for_status()
                     result = resp.json()
-                    parsed = self._parse_response(result, prompt)
-                    if parsed:
-                        return parsed
-                    return ""
+                    return self._parse_chat_response(result)
                 except httpx.TimeoutException:
                     if attempt < 2:
                         import asyncio
@@ -86,27 +80,16 @@ class HFInferenceClient(ModelClient):
         return ""
 
     @staticmethod
+    def _parse_chat_response(result: Any) -> str:
+        try:
+            content = result["choices"][0]["message"]["content"]
+            return _extract_sql(content)
+        except (KeyError, IndexError, TypeError):
+            return str(result)
+
+    @staticmethod
     def _parse_response(result: Any, prompt: str) -> str:
-        if isinstance(result, list):
-            for item in result:
-                if isinstance(item, dict):
-                    text = item.get("generated_text", "")
-                    if text:
-                        cleaned = text.replace(prompt, "").strip()
-                        if cleaned:
-                            return _extract_sql(cleaned)
-                    break
-            if result:
-                last = result[-1]
-                if isinstance(last, dict):
-                    text = last.get("generated_text", str(last))
-                    return _extract_sql(text.replace(prompt, "").strip())
-                return _extract_sql(str(last))
-            return ""
-        if isinstance(result, dict):
-            text = result.get("generated_text", str(result))
-            return _extract_sql(text.replace(prompt, "").strip())
-        return _extract_sql(str(result).replace(prompt, "").strip())
+        return HFInferenceClient._parse_chat_response(result)
 
 
 class OpenAIClient(ModelClient):

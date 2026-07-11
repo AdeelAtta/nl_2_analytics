@@ -77,7 +77,14 @@ class NL2SQLGenerator:
         fallback_chain = route["fallback_chain"]
 
         if selected_tier == ModelTier.NONE.value:
-            sql = self._rule_based_generate(query, intent, context, dialect)
+            return GenerationResult(
+                id=gen_id, query=query, sql="",
+                status=GenerationStatus.FAILED,
+                model_tier="none", model_name="",
+                intent=intent.model_dump() if isinstance(intent, QueryIntent) else intent,
+                error="Rule-based generation is disabled. Configure an LLM provider.",
+                latency_ms=0.0, cost=0.0,
+            )
             elapsed = (time.perf_counter() - start) * 1000
             return GenerationResult(
                 id=gen_id,
@@ -130,32 +137,15 @@ class NL2SQLGenerator:
                 continue
 
         if not candidates:
-            from app.core.config import get_settings
-            settings = get_settings()
-            if settings.environment == "production":
-                elapsed = (time.perf_counter() - start) * 1000
-                return GenerationResult(
-                    id=gen_id, query=query, sql="",
-                    status=GenerationStatus.FAILED,
-                    model_tier="none", model_name="",
-                    intent=intent.model_dump() if isinstance(intent, QueryIntent) else intent,
-                    error="No LLM model available. Configure HF_TOKEN, OPENAI_API_KEY, "
-                          "or switch to development mode for rule-based fallback.",
-                    latency_ms=elapsed, cost=0.0,
-                )
-            sql = self._rule_based_generate(query, intent, context, dialect)
             elapsed = (time.perf_counter() - start) * 1000
             return GenerationResult(
-                id=gen_id,
-                query=query,
-                sql=sql,
-                status=GenerationStatus.COMPLETED,
-                model_tier=ModelTier.NONE.value,
-                model_name="rule_based",
+                id=gen_id, query=query, sql="",
+                status=GenerationStatus.FAILED,
+                model_tier="none", model_name="",
                 intent=intent.model_dump() if isinstance(intent, QueryIntent) else intent,
-                candidates=[CandidateResult(sql=sql, model_tier=ModelTier.NONE.value, model_name="rule_based", score=1.0, latency_ms=elapsed)],
-                latency_ms=elapsed,
-                cost=0.0,
+                error=f"No LLM model available. All model tiers failed. "
+                      f"Configure HF_TOKEN or OPENAI_API_KEY. Last error: {last_error or 'unknown'}",
+                latency_ms=elapsed, cost=0.0,
             )
 
         best = max(candidates, key=lambda c: c.score)
@@ -240,11 +230,21 @@ class NL2SQLGenerator:
         tables = intent.tables
         if not tables:
             words = _re.findall(r"\b[a-z]{3,}\b", query.lower())
-            stopwords = {"the", "and", "for", "all", "from", "with", "that", "this", "show", "list", "get", "find", "display", "give", "me", "each", "per", "how", "many", "what", "which", "where", "have", "has", "who"}
+            stopwords = {"the", "and", "for", "all", "from", "with", "that", "this", "show", "list", "get", "find", "display", "give", "me", "each", "per", "how", "many", "what", "which", "where", "have", "has", "who", "over", "under", "more", "less", "than", "greater", "higher", "lower", "total", "average", "minimum", "maximum", "number", "count", "sum", "who", "is", "are", "were", "was", "been", "being", "does", "do", "did", "will", "would", "could", "should", "may", "might", "can", "shall"}
             candidates = sorted(set(w for w in words if w not in stopwords), key=len, reverse=True)
+
+            if context and context.get("tables"):
+                known_tables = {t["name"].lower(): t["name"] for t in context["tables"]}
+                for cand in candidates:
+                    for tbl_key, tbl_val in known_tables.items():
+                        if cand in tbl_key or tbl_key in cand:
+                            return f"SELECT * FROM {tbl_val};"
+                    for tbl_key in known_tables:
+                        if len(cand) > 3 and len(tbl_key) > 3 and (cand[:3] == tbl_key[:3]):
+                            return f"SELECT * FROM {known_tables[tbl_key]};"
+
             if candidates:
-                table_name = _safe_identifier(candidates[0])
-                return f"SELECT * FROM {table_name} WHERE {_safe_identifier(candidates[1] if len(candidates) > 1 else 'status')} = 'active';"
+                return f"SELECT * FROM {_safe_identifier(candidates[0])} LIMIT 10;"
             return "SELECT 1;"
 
         table_name = _safe_identifier(tables[0].name)

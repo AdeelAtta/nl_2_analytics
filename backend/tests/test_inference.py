@@ -13,44 +13,43 @@ from ke.services.inference import (
 
 
 class TestHFInferenceClient:
-    def test_parse_response_extracts_sql_from_text(self) -> None:
-        result = [
-            {"generated_text": "SELECT * FROM users WHERE id = 1;\nThe query returns all users with id = 1."},
-        ]
-        parsed = HFInferenceClient._parse_response(result, "prompt")
-        assert "SELECT * FROM users WHERE id = 1" in parsed
-        assert "The query returns" not in parsed
+    def test_parse_chat_response_extracts_sql(self) -> None:
+        result = {
+            "choices": [{"message": {"content": "```sql\nSELECT * FROM users WHERE id = 1;\n```"}}]
+        }
+        parsed = HFInferenceClient._parse_chat_response(result)
+        assert "SELECT * FROM users" in parsed
 
-    def test_parse_response_empty_list(self) -> None:
-        parsed = HFInferenceClient._parse_response([], "prompt")
-        assert parsed == ""
+    def test_parse_chat_response_empty(self) -> None:
+        parsed = HFInferenceClient._parse_chat_response({})
+        assert parsed is not None
 
-    def test_parse_response_returns_only_sql(self) -> None:
-        result = [
-            {"generated_text": "    SELECT id, name FROM users WHERE active = true;\n\n-- end of query"},
-        ]
-        parsed = HFInferenceClient._parse_response(result, "prompt")
+    def test_parse_chat_response_plain_sql(self) -> None:
+        result = {
+            "choices": [{"message": {"content": "SELECT id, name FROM users WHERE active = true;"}}]
+        }
+        parsed = HFInferenceClient._parse_chat_response(result)
         assert "SELECT id, name FROM users" in parsed
 
-    def test_parse_response_dict_format(self) -> None:
-        result = {"generated_text": "SELECT 1"}
-        parsed = HFInferenceClient._parse_response(result, "prompt")
+    def test_parse_chat_response_simple(self) -> None:
+        result = {
+            "choices": [{"message": {"content": "SELECT 1"}}]
+        }
+        parsed = HFInferenceClient._parse_chat_response(result)
         assert parsed == "SELECT 1"
 
     @pytest.mark.asyncio
     async def test_generate_calls_hf_api(self) -> None:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = [{"generated_text": "SELECT * FROM test"}]
-
-        async def mock_post(*args, **kwargs):
-            return mock_resp
+        mock_resp.json.return_value = {
+            "choices": [{"message": {"content": "SELECT * FROM test"}}]
+        }
 
         with patch("httpx.AsyncClient") as MockClient:
             mock_instance = AsyncMock()
             mock_instance.__aenter__.return_value = mock_instance
             mock_instance.post.return_value = mock_resp
-            mock_instance.post.side_effect = lambda *a, **kw: AsyncMock() if False else mock_resp
             MockClient.return_value = mock_instance
 
             client = HFInferenceClient("test-model", cost=0.0)

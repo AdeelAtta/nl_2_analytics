@@ -144,7 +144,7 @@ class IntentAgent:
 
     def _select_model_tier(self, complexity: QueryComplexity) -> str:
         mapping = {
-            QueryComplexity.SIMPLE: "none",
+            QueryComplexity.SIMPLE: "lightweight",
             QueryComplexity.MEDIUM: "lightweight",
             QueryComplexity.COMPLEX: "standard",
             QueryComplexity.VERY_COMPLEX: "premium",

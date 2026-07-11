@@ -134,15 +134,23 @@ def _extract_limit(sql: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def extract_columns(sql: str) -> list[dict[str, str]]:
-    from ke.services.demo_data import DEMO_COLUMNS, DEMO_TABLES
+def extract_columns(sql: str, tenant_id: str = "demo") -> list[dict[str, str]]:
+    from ke.services.schema_registry import get_schema
 
     if not sql or not sql.strip():
         return []
     sql_lower = sql.lower().strip().rstrip(";")
     tables_in_sql = set(_extract_tables(sql_lower))
+
+    schema = get_schema(tenant_id)
+    if not schema:
+        return []
+    source_cols = schema.get("columns", [])
+    if not source_cols:
+        return []
+
     matched_cols = []
-    for col in DEMO_COLUMNS:
+    for col in source_cols:
         t = col.get("table_name", "").lower() if isinstance(col, dict) else ""
         if t in tables_in_sql:
             matched_cols.append({

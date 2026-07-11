@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-SQL_GENERATION_TEMPLATE = """You are a SQL expert. Generate a {dialect} SQL query based on the user's request.
+SQL_GENERATION_TEMPLATE = """You are a SQL expert. Generate a PostgreSQL SQL query based on the user's request.
+
+CRITICAL: Only use tables and columns listed in the schema below. Never invent or guess table or column names.
 
 Database Schema:
 {schema_ddl}
@@ -16,14 +18,21 @@ Filters: {filters}
 Aggregations: {aggregations}
 Joins: {joins}
 
-Generate only the SQL query, no explanation. Use proper {dialect} syntax."""
+Rules:
+1. Only use tables and columns from the schema above
+2. If the user request mentions something not in the schema, use the closest matching table
+3. Use proper PostgreSQL syntax
+4. Return ONLY the SQL query, no explanation, no markdown formatting"""
 
-SIMPLE_SQL_TEMPLATE = """Generate a {dialect} SQL query for: {query}
+SIMPLE_SQL_TEMPLATE = """Generate a PostgreSQL SQL query for: {query}
+
+CRITICAL: Only use tables and columns listed in the schema below. Never invent tables.
 
 Schema:
 {schema_ddl}
 {conversation_history}
-Return only the SQL query, no explanation."""
+
+Return ONLY the SQL query, no explanation, no markdown."""
 
 REFLECTION_TEMPLATE = """Review this {dialect} SQL query for correctness:
 

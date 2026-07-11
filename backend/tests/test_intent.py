@@ -85,11 +85,11 @@ class TestIntentAgent:
 
     def test_model_tier_simple(self, agent: IntentAgent) -> None:
         intent = agent.classify("Show all customers")
-        assert intent.model_tier == "none"
+        assert intent.model_tier == "lightweight"
 
     def test_model_tier_medium(self, agent: IntentAgent) -> None:
-        intent = agent.classify("Show orders with customer names")
-        assert intent.model_tier in ("lightweight", "none")
+        intent = agent.classify("Show me customers who made orders")
+        assert intent.model_tier == "lightweight"
 
     def test_model_tier_complex(self, agent: IntentAgent) -> None:
         context = {

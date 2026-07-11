@@ -52,12 +52,12 @@ class TestModelRouter:
     def test_route_medium(self, router: ModelRouter, medium_intent: QueryIntent) -> None:
         result = router.route(medium_intent)
         assert result["selected_tier"] == "lightweight"
-        assert result["config"]["model"] == "defog/sqlcoder-7b-2"
+        assert result["config"]["model"] == "meta-llama/Llama-3.1-8B-Instruct"
 
     def test_route_complex(self, router: ModelRouter, complex_intent: QueryIntent) -> None:
         result = router.route(complex_intent)
         assert result["selected_tier"] == "standard"
-        assert result["config"]["model"] == "Qwen/Qwen2.5-72B-Instruct"
+        assert result["config"]["model"] == "meta-llama/Llama-3.1-8B-Instruct"
 
     def test_route_tenant_free_caps_to_lightweight(
         self, router: ModelRouter, complex_intent: QueryIntent

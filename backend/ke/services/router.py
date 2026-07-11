@@ -17,13 +17,13 @@ class ModelRouter:
         },
         ModelTier.LIGHTWEIGHT: {
             "provider": "huggingface",
-            "model": "defog/sqlcoder-7b-2",
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
             "cost_per_query": 0.0001,
             "description": "Lightweight model for simple queries",
         },
         ModelTier.STANDARD: {
             "provider": "huggingface",
-            "model": "Qwen/Qwen2.5-72B-Instruct",
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
             "cost_per_query": 0.001,
             "description": "Standard model for complex queries",
         },
@@ -36,7 +36,7 @@ class ModelRouter:
     }
 
     ROUTE_RULES: list[tuple[QueryComplexity, ModelTier]] = [
-        (QueryComplexity.SIMPLE, ModelTier.NONE),
+        (QueryComplexity.SIMPLE, ModelTier.LIGHTWEIGHT),
         (QueryComplexity.MEDIUM, ModelTier.LIGHTWEIGHT),
         (QueryComplexity.COMPLEX, ModelTier.STANDARD),
         (QueryComplexity.VERY_COMPLEX, ModelTier.PREMIUM),

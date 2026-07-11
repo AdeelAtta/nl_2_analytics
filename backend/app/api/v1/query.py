@@ -54,7 +54,7 @@ async def execute_query(
     resp = _pipeline_to_response(result)
     from ke.services.explain import explain_sql, extract_columns
     resp["explanation"] = explain_sql(result.sql or "", result.query)
-    resp["columns"] = extract_columns(result.sql or "")
+    resp["columns"] = extract_columns(result.sql or "", tenant_id)
     return resp
 
 
@@ -74,6 +74,8 @@ def _pipeline_to_response(result: PipelineResult) -> dict[str, Any]:
             }
             for s in result.stages
         ],
+        "model_tier": result.model_tier,
+        "model_name": result.model_name,
         "total_duration_ms": result.total_duration_ms,
         "session_id": result.session_id,
         "quality_score": result.quality_score.model_dump() if result.quality_score else None,
