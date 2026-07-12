@@ -45,7 +45,7 @@ def _registry_tables(tenant_id: str, page: int, page_size: int) -> dict[str, Any
     return {
         "success": True,
         "data": [
-            {"id": f"reg-{t['name']}", "name": t["name"], "description": f"{len(t['columns'])} columns", "schema_name": ""}
+            {"id": f"reg-{t['name']}", "name": t["name"], "description": t.get("description", ""), "schema_name": ""}
             for t in page_data
         ],
         "meta": {"page": page, "page_size": page_size, "total": len(tables)},
@@ -97,7 +97,7 @@ async def get_table(
                     "data": {
                         "id": table_id,
                         "name": t["name"],
-                        "description": "",
+                        "description": t.get("description", ""),
                         "columns": [
                             {
                                 "id": f"col-{c['name']}",
@@ -105,7 +105,7 @@ async def get_table(
                                 "data_type": c["data_type"],
                                 "is_nullable": c.get("is_nullable", True),
                                 "is_primary_key": c.get("is_primary_key", False),
-                                "description": "",
+                                "description": c.get("description", ""),
                             }
                             for c in t.get("columns", [])
                         ],

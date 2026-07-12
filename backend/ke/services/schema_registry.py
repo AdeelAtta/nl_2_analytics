@@ -78,14 +78,19 @@ def build_ddl(tables: list[dict[str, Any]], columns: list[dict[str, Any]],
     lines: list[str] = []
     for tbl in tables:
         tbl_name = tbl["name"]
+        tbl_desc = tbl.get("description", "")
         tbl_cols = [c for c in columns if c.get("table_name", "").lower() == tbl_name.lower()]
-        lines.append(f"CREATE TABLE {tbl_name} (")
+        desc = f" -- {tbl_desc}" if tbl_desc else ""
+        lines.append(f"CREATE TABLE {tbl_name}{desc} (")
         for col in tbl_cols:
             parts = [f"  {col['name']} {col['data_type']}"]
             if col.get("is_primary_key"):
                 parts.append("PRIMARY KEY")
             if not col.get("is_nullable", True):
                 parts.append("NOT NULL")
+            col_desc = col.get("description", "")
+            if col_desc:
+                parts[-1] += f" -- {col_desc}"
             lines.append(" ".join(parts))
         lines.append(");")
         if relationships:

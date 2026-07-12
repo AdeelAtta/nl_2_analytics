@@ -66,23 +66,30 @@ TEMPLATES: dict[str, str] = {
 
 def format_schema_ddl(tables: list[dict[str, Any]], columns: list[dict[str, Any]], relationships: list[dict[str, Any]]) -> str:
     lines: list[str] = []
-    for tbl in tables:
-        tbl_name = tbl.get("name", "")
-        tbl_cols = [c for c in columns if c.get("table_name", "").lower() == tbl_name.lower() or c.get("table", "").lower() == tbl_name.lower()]
-        lines.append(f"TABLE {tbl_name} (")
+    tbl_map = {t.get("name", "").lower(): t for t in tables}
+    for tbl_name, tbl in sorted(tbl_map.items()):
+        display_name = tbl.get("name", tbl_name)
+        tbl_desc = tbl.get("description", "")
+        tbl_cols = [c for c in columns if c.get("table_name", "").lower() == tbl_name]
+        desc_line = f" -- {tbl_desc}" if tbl_desc else ""
+        lines.append(f"TABLE {display_name}{desc_line}")
+        lines.append(f"(")
         for col in tbl_cols:
             col_name = col.get("name", col.get("column", ""))
             col_type = col.get("data_type", col.get("type", "unknown"))
+            col_desc = col.get("description", "")
             pk = " PK" if col.get("is_primary_key", col.get("primary_key", False)) else ""
             nullable = "" if col.get("is_nullable", True) else " NOT NULL"
             fk = ""
             for rel in relationships:
-                if rel.get("source_column", "").lower() == col_name.lower() and rel.get("source_table", "").lower() == tbl_name.lower():
+                if rel.get("source_column", "").lower() == col_name.lower() and rel.get("source_table", "").lower() == tbl_name:
                     fk = f" FK->{rel['target_table']}({rel['target_column']})"
-                elif rel.get("target_column", "").lower() == col_name.lower() and rel.get("target_table", "").lower() == tbl_name.lower():
+                elif rel.get("target_column", "").lower() == col_name.lower() and rel.get("target_table", "").lower() == tbl_name:
                     fk = f" FK<-{rel['source_table']}({rel['source_column']})"
-            lines.append(f"  {col_name} {col_type}{pk}{nullable}{fk}")
+            desc = f" -- {col_desc}" if col_desc else ""
+            lines.append(f"  {col_name} {col_type}{pk}{nullable}{fk}{desc}")
         lines.append(f")")
+        lines.append("")
     return "\n".join(lines)
 
 

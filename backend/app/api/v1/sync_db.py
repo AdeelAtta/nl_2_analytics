@@ -114,7 +114,22 @@ async def sync_and_extract(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     tenant_id = current_user.get("tenant_id", "default")
     try:
-        orchestrator = SyncOrchestrator()
+        from schema_intelligence.annotators.llm_provider import LLMAnnotator
+        from schema_intelligence.services.annotation import AnnotationService
+        from app.core.config import get_settings
+        _settings = get_settings()
+        _hf_token = _settings.hf_token
+        if _hf_token:
+            llm_annotator = LLMAnnotator(
+                endpoint="https://router.huggingface.co/v1",
+                model="Qwen/Qwen2.5-Coder-7B-Instruct",
+                api_key=_hf_token,
+                timeout_seconds=120,
+            )
+            anno_service = AnnotationService(annotator=llm_annotator)
+        else:
+            anno_service = None
+        orchestrator = SyncOrchestrator(annotation_service=anno_service)
         result = await orchestrator.sync(_make_config(body, 30), db_type=body.db_type)
         from schema_intelligence.sync.models import SyncChangeType
 
@@ -122,8 +137,18 @@ async def sync_and_extract(
         changed_tables = [c.table for c in result.changes if c.change_type == SyncChangeType.CHANGED]
 
         tables_out = []
+        # Build annotation lookup for descriptions
+        annos: dict[str, dict[str, str]] = {}
+        for change in result.changes:
+            if change.annotation:
+                table_desc = change.annotation.table_description or ""
+                col_descs = {ac.name.lower(): ac.description or "" for ac in change.annotation.columns}
+                annos[change.table.name.lower()] = {"table": table_desc, "columns": col_descs}
+
         all_columns: list[dict[str, Any]] = []
         for table in added_tables + changed_tables:
+            tbl_anno = annos.get(table.name.lower(), {})
+            tbl_col_descs = tbl_anno.get("columns", {})
             cols = []
             for c in table.columns:
                 col_data = {
@@ -133,10 +158,15 @@ async def sync_and_extract(
                     "is_nullable": c.is_nullable,
                     "ordinal_position": getattr(c, "ordinal_position", 0),
                     "table_name": table.name,
+                    "description": tbl_col_descs.get(c.name.lower(), ""),
                 }
                 cols.append(col_data)
                 all_columns.append(col_data)
-            tables_out.append({"name": table.name, "columns": cols})
+            tables_out.append({
+                "name": table.name,
+                "description": tbl_anno.get("table", ""),
+                "columns": cols,
+            })
 
         # Infer relationships from FK-like column names
         inferred_rels = _infer_relationships(tables_out)

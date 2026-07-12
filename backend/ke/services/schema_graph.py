@@ -80,19 +80,17 @@ class SchemaGraph:
     def render_for_prompt(self) -> str:
         lines: list[str] = []
         for tbl_name, tbl in sorted(self._tables.items()):
-            pk_cols = [c["name"] for c in self._columns.get(tbl_name, []) if c.get("is_primary_key")]
-            if pk_cols:
-                lines.append(f"TABLE {tbl['name']} (PK: {', '.join(pk_cols)})")
-            else:
-                lines.append(f"TABLE {tbl['name']}")
-
+            tbl_desc = tbl.get("description", "")
+            desc_tag = f" -- {tbl_desc}" if tbl_desc else ""
+            lines.append(f"TABLE {tbl['name']}{desc_tag}")
+            lines.append(f"(")
             for col in self._columns.get(tbl_name, []):
-                parts = [f"  {col['name']} {col['data_type']}"]
-                if col.get("is_primary_key"):
-                    parts[0] += " [PK]"
-                if not col.get("is_nullable", True):
-                    parts[0] += " [NOT NULL]"
-                lines.extend(parts)
+                col_desc = col.get("description", "")
+                desc = f" -- {col_desc}" if col_desc else ""
+                pk = " PK" if col.get("is_primary_key") else ""
+                nn = " NOT NULL" if not col.get("is_nullable", True) else ""
+                lines.append(f"  {col['name']} {col['data_type']}{pk}{nn}{desc}")
+            lines.append(f")")
             lines.append("")
 
         if self._relationships:

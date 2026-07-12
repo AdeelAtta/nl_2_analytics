@@ -17,15 +17,15 @@ class ModelRouter:
         },
         ModelTier.LIGHTWEIGHT: {
             "provider": "huggingface",
-            "model": "meta-llama/Llama-3.1-8B-Instruct",
+            "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
             "cost_per_query": 0.0001,
-            "description": "Lightweight model for simple queries",
+            "description": "Code-specialized model for SQL queries",
         },
         ModelTier.STANDARD: {
             "provider": "huggingface",
             "model": "meta-llama/Llama-3.1-8B-Instruct",
             "cost_per_query": 0.001,
-            "description": "Standard model for complex queries",
+            "description": "Larger instruct model for complex queries",
         },
         ModelTier.PREMIUM: {
             "provider": "openai",

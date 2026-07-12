@@ -52,7 +52,7 @@ class TestModelRouter:
     def test_route_medium(self, router: ModelRouter, medium_intent: QueryIntent) -> None:
         result = router.route(medium_intent)
         assert result["selected_tier"] == "lightweight"
-        assert result["config"]["model"] == "meta-llama/Llama-3.1-8B-Instruct"
+        assert result["config"]["model"] == "Qwen/Qwen2.5-Coder-7B-Instruct"
 
     def test_route_complex(self, router: ModelRouter, complex_intent: QueryIntent) -> None:
         result = router.route(complex_intent)

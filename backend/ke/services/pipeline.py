@@ -308,17 +308,29 @@ class PipelineOrchestrator:
                 error=generation.error or "SQL generation failed",
             )
 
-        # Post-generation schema validation
-        if generation and generation.sql:
-            from ke.services.validator import validate_sql_against_schema
-            schema_errors = validate_sql_against_schema(generation.sql, merged_context)
+        # Post-generation schema validation — block hallucinated tables/columns
+        # Only validate when there's an actual synced schema (not demo data)
+        if generation and generation.sql and merged_context.get("tables"):
+            from ke.services.schema_registry import has_schema
+            if has_schema(tenant_id):
+                from ke.services.validator import validate_sql_against_schema
+                schema_errors = validate_sql_against_schema(generation.sql, merged_context)
+            else:
+                schema_errors = []
             if schema_errors:
+                elapsed = (time.perf_counter() - start) * 1000
                 stages.append(PipelineStageResult(
                     name="validate_schema",
-                    status="warning",
+                    status="failed",
                     data={"errors": schema_errors},
-                    duration_ms=0,
+                    duration_ms=elapsed,
                 ))
+                return PipelineResult(
+                    id=pipeline_id, query=query, status=PipelineStatus.FAILED, stages=stages,
+                    total_duration_ms=elapsed,
+                    model_tier=generation.model_tier, model_name=generation.model_name,
+                    error=f"Generated SQL references tables/columns not in your schema: {'; '.join(schema_errors)}",
+                )
 
         # Stage 3b: Quality scoring (non-blocking, after generate, before guard)
         if enable_quality and self._quality_scorer is not None and generation and generation.sql:

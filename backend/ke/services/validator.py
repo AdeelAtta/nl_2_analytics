@@ -39,4 +39,18 @@ def validate_sql_against_schema(sql: str, context: dict[str, Any] | None) -> lis
             if col not in columns_in_schema.get(tbl, set()):
                 errors.append(f"Column '{col}' does not exist in table '{tbl}'")
 
+    # Check unqualified column names in SELECT (except functions like COUNT(*))
+    select_match = re.search(r"select\s+(.*?)\s+from", sql_lower, re.DOTALL)
+    if select_match:
+        select_clause = select_match.group(1)
+        for part in select_clause.split(","):
+            part = part.strip()
+            col = part.split(" as ")[0].strip()
+            if "(" in col or col == "*":
+                continue
+            if "." not in col:
+                exists = any(col in cols for cols in columns_in_schema.values())
+                if not exists:
+                    errors.append(f"Column '{col}' does not exist in the schema")
+
     return errors
