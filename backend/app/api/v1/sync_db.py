@@ -1,7 +1,17 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
+
+
+def _serialize_row(row: dict[str, Any]) -> dict[str, Any]:
+    cleaned: dict[str, Any] = {}
+    for k, v in row.items():
+        if isinstance(v, (datetime, date)):
+            cleaned[k] = v.isoformat()
+        else:
+            cleaned[k] = v
+    return cleaned
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -181,7 +191,7 @@ async def sync_and_extract(
                     qualified = f'"{schema_name}"."{tbl["name"]}"' if schema_name else f'"{tbl["name"]}"'
                     raw = await sample_conn._conn.fetch(f"SELECT * FROM {qualified} LIMIT 3")
                     if raw:
-                        sample_rows[tbl["name"]] = [dict(r) for r in raw]
+                        sample_rows[tbl["name"]] = [_serialize_row(dict(r)) for r in raw]
                 except Exception as e:
                     import logging
                     logging.warning("Sample row fetch failed for %s: %s", tbl['name'], e)
