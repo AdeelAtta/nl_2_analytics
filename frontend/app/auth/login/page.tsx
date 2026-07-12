@@ -31,28 +31,25 @@ export default function LoginPage() {
   if (isAuthenticated) return null;
 
   const handleSignIn = async () => {
-    if (!email || !password) { setError("Email and password are required"); return; }
+    if (!email) { setError("Email is required"); return; }
+    if (!password) { setError("Password is required"); return; }
     setLoading(true); setError("");
     try {
       await loginWithEmail(email, password);
       router.replace("/dashboard");
-    } catch {
-      setError("Invalid email or password. Please try again.");
+    } catch (e) {
+      setError((e as Error).message);
     }
     setLoading(false);
   };
 
   const handleRegister = async () => {
-    if (!email || !password) { setError("Email and password are required"); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
     setLoading(true); setError("");
     try {
       await register(email, password, name, companyName);
       router.replace("/dashboard");
     } catch (e) {
-      const msg = (e as Error).message;
-      if (msg.includes("already")) setError("An account with this email already exists");
-      else setError("Registration failed. Please try again.");
+      setError((e as Error).message);
     }
     setLoading(false);
   };

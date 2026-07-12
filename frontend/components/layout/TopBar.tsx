@@ -73,7 +73,11 @@ export function TopBar() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => { logout(); router.push("/auth/login"); }}>
+          <DropdownMenuItem onClick={() => {
+            logout();
+            try { localStorage.removeItem("openquery-query"); } catch {}
+            router.push("/auth/login");
+          }}>
             <LogOut className="mr-2 h-4 w-4" />
             Log out
           </DropdownMenuItem>

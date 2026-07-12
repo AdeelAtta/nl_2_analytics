@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.auth.jwt import create_token
 from app.core.config import get_settings
@@ -20,6 +22,21 @@ class RegisterRequest(BaseModel):
     password: str
     name: str = ""
     tenant_name: str = ""
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", v):
+            raise ValueError("Invalid email format")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -59,7 +76,10 @@ async def register(body: RegisterRequest) -> AuthResponse:
 
         user = create_user(body.email, body.password, tenant_id, body.name)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        detail = str(e)
+        if "already registered" in detail.lower():
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
     token = create_token({"sub": user["id"], "tenant_id": tenant_id, "role": user["role"]})
     return AuthResponse(
