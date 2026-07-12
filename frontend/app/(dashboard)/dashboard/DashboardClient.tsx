@@ -80,7 +80,7 @@ export function DashboardClient() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome{name ? `, ${name}` : ""} — {email || "OpenQuery"}
+          Welcome{name ? `, ${name}` : ""} — {email || "SchemaIntern"}
         </p>
       </div>
 

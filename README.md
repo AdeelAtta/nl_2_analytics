@@ -1,10 +1,10 @@
-# OpenQuery — Enterprise Data Intelligence Platform
+# SchemaIntern — DB-Aware NL to SQL
 
-AI-powered natural language querying for enterprise databases.
+Schema-aware natural language to SQL — knows your database schema and generates accurate, safe SQL queries.
 
 ## Architecture
 
-OpenQuery connects to enterprise databases (PostgreSQL, MySQL, Snowflake, BigQuery) and lets users ask questions in natural language. The platform:
+SchemaIntern connects to enterprise databases (PostgreSQL, MySQL, Snowflake, BigQuery) and lets users ask questions in natural language. The platform:
 
 1. **Discovers** schema meaning automatically (no manual YAML)
 2. **Retrieves** relevant context from a self-learning Knowledge Engine
@@ -202,7 +202,7 @@ POSTGRES_PASSWORD=123 ./bin/seed.sh --all
 ## Project Structure
 
 ```
-openquery/
+schemaintern/
 ├── backend/            # Python FastAPI services
 │   ├── public-api/     # External API (port 8100)
 │   ├── ke-api/         # Knowledge Engine API (port 8200)

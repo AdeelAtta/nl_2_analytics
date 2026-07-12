@@ -7,15 +7,8 @@ import { useQueryStore } from "@/stores/query";
 import { useUIStore } from "@/stores/ui";
 import { ChatInput } from "@/components/query/ChatInput";
 import { ChatMessage } from "@/components/query/ChatMessage";
-import { Sparkles, Database, MessageSquare, Trash2 } from "lucide-react";
+import { Database, Trash2 } from "lucide-react";
 import Link from "next/link";
-
-const EXAMPLE_QUERIES = [
-  "show me active users",
-  "total revenue by quarter",
-  "list products out of stock",
-  "find customers from new york",
-];
 
 export default function QueryPage() {
   const searchParams = useSearchParams();
@@ -71,26 +64,12 @@ export default function QueryPage() {
       >
         {isEmpty ? (
           <div className="flex h-full flex-col items-center justify-center gap-8 px-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg ring-1 ring-white/10">
-              <Sparkles className="h-8 w-8 text-white" />
-            </div>
+            <img src="/schemaintern_logo.png" alt="SchemaIntern" className="h-16 w-16" />
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight">Ask anything about your data</h1>
               <p className="mt-2 text-sm text-muted-foreground max-w-sm">
                 Describe the data you&apos;re looking for in plain English
               </p>
-            </div>
-            <div className="grid w-full max-w-lg gap-2.5 sm:grid-cols-2">
-              {EXAMPLE_QUERIES.map((eq) => (
-                <button
-                  key={eq}
-                  onClick={() => handleSend(eq)}
-                  className="group flex items-center gap-2.5 rounded-xl border bg-card/50 p-3.5 text-left text-sm transition-all duration-200 hover:border-primary/50 hover:bg-accent hover:shadow-sm"
-                >
-                  <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground/60 group-hover:text-primary transition-colors" />
-                  <span className="line-clamp-1 font-medium">{eq}</span>
-                </button>
-              ))}
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <Link

@@ -69,11 +69,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-xl font-bold text-primary-foreground">
-            OQ
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center">
+            <img src="/schemaintern_logo.png" alt="SchemaIntern" className="h-12 w-12" />
           </div>
-          <CardTitle className="text-2xl">Welcome to OpenQuery</CardTitle>
-          <CardDescription>Enterprise Text-to-SQL Platform</CardDescription>
+          <CardTitle className="text-2xl">Welcome to Schema<span className="text-primary">Intern</span></CardTitle>
+          <CardDescription>DB-Aware NL to SQL Platform</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs defaultValue={defaultTab} className="w-full">

@@ -98,7 +98,7 @@ seed_db() {
 # ---- Main -----------------------------------------------------
 echo ""
 echo "╔═══════════════════════════════════════════╗"
-echo "║        OpenQuery Database Seeder          ║"
+echo "║        SchemaIntern Database Seeder       ║"
 echo "╚═══════════════════════════════════════════╝"
 
 if [ "$TARGET" = "ALL" ]; then

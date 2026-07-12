@@ -39,10 +39,10 @@ clean: ## Clean build artifacts
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 build-backend: ## Build backend Docker image
-	docker build -f infra/docker/Dockerfile.backend -t openquery-backend:latest .
+	docker build -f infra/docker/Dockerfile.backend -t schemaintern-backend:latest .
 
 build-frontend: ## Build frontend Docker image
-	docker build -f infra/docker/Dockerfile.frontend -t openquery-frontend:latest .
+	docker build -f infra/docker/Dockerfile.frontend -t schemaintern-frontend:latest .
 
 up: ## Start all services with Docker Compose
 	docker compose -f infra/docker/docker-compose.yml up -d
