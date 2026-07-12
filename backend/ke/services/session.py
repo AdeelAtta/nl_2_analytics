@@ -41,13 +41,19 @@ class InMemorySessionService:
         self._sessions: dict[str, list[SessionTurn]] = {}
         self._max_turns: int = 20
 
+    def _key(self, session_id: str, tenant_id: str) -> str:
+        return f"{tenant_id}:{session_id}"
+
     async def get_or_create(self, session_id: str | None, tenant_id: str = "default") -> tuple[str, list[SessionTurn]]:
-        if session_id and session_id in self._sessions:
-            return session_id, self._sessions[session_id]
+        if session_id:
+            k = self._key(session_id, tenant_id)
+            if k in self._sessions:
+                return session_id, self._sessions[k]
         new_id = session_id or str(uuid.uuid4())
-        if new_id not in self._sessions:
-            self._sessions[new_id] = []
-        return new_id, self._sessions[new_id]
+        k = self._key(new_id, tenant_id)
+        if k not in self._sessions:
+            self._sessions[k] = []
+        return new_id, self._sessions[k]
 
     async def add_turn(
         self,
@@ -58,9 +64,11 @@ class InMemorySessionService:
         intent_type: str = "",
         model_tier: str = "none",
         model_name: str = "",
+        tenant_id: str = "default",
     ) -> SessionTurn:
-        if session_id not in self._sessions:
-            self._sessions[session_id] = []
+        k = self._key(session_id, tenant_id)
+        if k not in self._sessions:
+            self._sessions[k] = []
         turn = SessionTurn(
             query=query,
             sql=sql,
@@ -69,9 +77,9 @@ class InMemorySessionService:
             model_tier=model_tier,
             model_name=model_name,
         )
-        self._sessions[session_id].append(turn)
-        if len(self._sessions[session_id]) > self._max_turns:
-            self._sessions[session_id] = self._sessions[session_id][-self._max_turns:]
+        self._sessions[k].append(turn)
+        if len(self._sessions[k]) > self._max_turns:
+            self._sessions[k] = self._sessions[k][-self._max_turns:]
         return turn
 
     def format_history(self, turns: list[SessionTurn], max_turns: int = 3) -> str:

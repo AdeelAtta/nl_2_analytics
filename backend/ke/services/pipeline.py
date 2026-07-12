@@ -130,6 +130,12 @@ class PipelineOrchestrator:
                 merged_context.setdefault("relationships", real.get("relationships", []))
                 merged_context.setdefault("ddl_context",
                     build_ddl(real["tables"], real["columns"], real.get("relationships", [])))
+
+                # Build graph context for relationship-aware queries
+                from ke.services.schema_graph import SchemaGraph
+                graph = SchemaGraph(real["tables"], real["columns"], real.get("relationships", []))
+                merged_context["schema_graph"] = graph
+                merged_context["graph_context"] = graph.render_for_prompt()
             elif tenant_id == "demo":
                 from ke.services.demo_data import get_demo_context
                 demo = get_demo_context()
@@ -302,6 +308,18 @@ class PipelineOrchestrator:
                 error=generation.error or "SQL generation failed",
             )
 
+        # Post-generation schema validation
+        if generation and generation.sql:
+            from ke.services.validator import validate_sql_against_schema
+            schema_errors = validate_sql_against_schema(generation.sql, merged_context)
+            if schema_errors:
+                stages.append(PipelineStageResult(
+                    name="validate_schema",
+                    status="warning",
+                    data={"errors": schema_errors},
+                    duration_ms=0,
+                ))
+
         # Stage 3b: Quality scoring (non-blocking, after generate, before guard)
         if enable_quality and self._quality_scorer is not None and generation and generation.sql:
             st = time.perf_counter()
@@ -414,6 +432,7 @@ class PipelineOrchestrator:
                 intent_type=intent.query_type.value if intent else "",
                 model_tier=generation.model_tier if generation else "none",
                 model_name=generation.model_name if generation else "",
+                tenant_id=tenant_id,
             )
 
         overall_status = PipelineStatus.SUCCESS if execution.status.value in ("success", "dry_run") else PipelineStatus.FAILED

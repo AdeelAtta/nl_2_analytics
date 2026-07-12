@@ -217,7 +217,7 @@ class TestE2EPipeline:
         )
 
         assert result2.status == PipelineStatus.SUCCESS
-        turns = session_svc._sessions.get("e2e-test", [])
+        turns = session_svc._sessions.get(session_svc._key("e2e-test", "default"), [])
         assert len(turns) == 2
 
     @pytest.mark.asyncio

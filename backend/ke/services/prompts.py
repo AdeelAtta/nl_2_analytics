@@ -2,55 +2,59 @@ from __future__ import annotations
 
 from typing import Any
 
-SQL_GENERATION_TEMPLATE = """You are a SQL expert. Generate a PostgreSQL SQL query based on the user's request.
+SQL_GENERATION_TEMPLATE = """You are a PostgreSQL expert. Generate SQL based on the user's request using ONLY the schema below.
 
-CRITICAL: Only use tables and columns listed in the schema below. Never invent or guess table or column names.
-
-Database Schema:
+TABLES AND COLUMNS:
 {schema_ddl}
 
-{conversation_history}
-User Request: {query}
+{graph_context}
 
-Query Intent: {intent_description}
-Tables: {tables}
+{conversation_history}
+USER QUESTION: {query}
+
+Intent: {intent_description}
+Detected Tables: {tables}
 Filters: {filters}
 Aggregations: {aggregations}
 Joins: {joins}
 
-Rules:
-1. Only use tables and columns from the schema above
-2. If the user request mentions something not in the schema, use the closest matching table
-3. Use proper PostgreSQL syntax
-4. Return ONLY the SQL query, no explanation, no markdown formatting"""
+RULES (must follow):
+1. ONLY use tables and columns listed in TABLES AND COLUMNS above
+2. Never invent, guess, or hallucinate table or column names
+3. For JOINs, use the relationships listed in RELATIONSHIPS above
+4. Use proper PostgreSQL syntax with table aliases for JOINs
+5. Return ONLY the SQL query — no explanation, no markdown, no backticks"""
 
 SIMPLE_SQL_TEMPLATE = """Generate a PostgreSQL SQL query for: {query}
 
-CRITICAL: Only use tables and columns listed in the schema below. Never invent tables.
-
-Schema:
+Available tables and columns:
 {schema_ddl}
+{graph_context}
 {conversation_history}
 
-Return ONLY the SQL query, no explanation, no markdown."""
+Rules:
+- Only use tables listed above
+- Never invent column or table names
+- Use table relationships for JOINs
+- Return ONLY the SQL query, nothing else"""
 
-REFLECTION_TEMPLATE = """Review this {dialect} SQL query for correctness:
+REFLECTION_TEMPLATE = """Review this PostgreSQL SQL query for correctness against the schema.
 
 SQL: {sql}
 
-Original Request: {query}
+User Request: {query}
 
 Schema:
 {schema_ddl}
 
-Check for:
-1. Correct table and column names (match schema exactly)
-2. Proper JOIN conditions
-3. Correct aggregate functions with GROUP BY
-4. Proper WHERE clause syntax
-5. No ambiguous column references (use table aliases)
+Check:
+1. All table names must exist in the schema above
+2. All column names must exist in their respective tables
+3. JOIN conditions must use columns that exist in both tables
+4. WHERE clause must reference valid columns
+5. Functions (COUNT, SUM, AVG) must reference valid columns
 
-List any issues found. If the SQL is correct, respond with "VALID".
+If the SQL is correct, respond with "VALID".
 If issues exist, list them and provide the corrected SQL."""
 
 TEMPLATES: dict[str, str] = {
@@ -64,29 +68,21 @@ def format_schema_ddl(tables: list[dict[str, Any]], columns: list[dict[str, Any]
     lines: list[str] = []
     for tbl in tables:
         tbl_name = tbl.get("name", "")
-        tbl_cols = [c for c in columns if c.get("table_name", "") == tbl_name or c.get("table", "") == tbl_name]
-        col_lines = []
+        tbl_cols = [c for c in columns if c.get("table_name", "").lower() == tbl_name.lower() or c.get("table", "").lower() == tbl_name.lower()]
+        lines.append(f"TABLE {tbl_name} (")
         for col in tbl_cols:
             col_name = col.get("name", col.get("column", ""))
             col_type = col.get("data_type", col.get("type", "unknown"))
-            nullable = col.get("nullable", True)
-            pk = col.get("is_primary_key", col.get("primary_key", False))
-            parts = [f"  {col_name} {col_type}"]
-            if pk:
-                parts.append("PK")
-            if not nullable:
-                parts.append("NOT NULL")
-            col_lines.append(" ".join(parts))
-        lines.append(f"CREATE TABLE {tbl_name} (")
-        lines.extend(col_lines)
-        lines.append(");")
-        for rel in relationships:
-            src = rel.get("source_table", "")
-            tgt = rel.get("target_table", "")
-            if src == tbl_name or tgt == tbl_name:
-                src_col = rel.get("source_column", "id")
-                tgt_col = rel.get("target_column", "id")
-                lines.append(f"-- {src}.{src_col} -> {tgt}.{tgt_col}")
+            pk = " PK" if col.get("is_primary_key", col.get("primary_key", False)) else ""
+            nullable = "" if col.get("is_nullable", True) else " NOT NULL"
+            fk = ""
+            for rel in relationships:
+                if rel.get("source_column", "").lower() == col_name.lower() and rel.get("source_table", "").lower() == tbl_name.lower():
+                    fk = f" FK->{rel['target_table']}({rel['target_column']})"
+                elif rel.get("target_column", "").lower() == col_name.lower() and rel.get("target_table", "").lower() == tbl_name.lower():
+                    fk = f" FK<-{rel['source_table']}({rel['source_column']})"
+            lines.append(f"  {col_name} {col_type}{pk}{nullable}{fk}")
+        lines.append(f")")
     return "\n".join(lines)
 
 

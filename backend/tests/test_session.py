@@ -56,15 +56,17 @@ class TestInMemorySessionService:
     async def test_add_turn_stores_data(self) -> None:
         svc = InMemorySessionService()
         await svc.add_turn("s1", "show users", sql="SELECT * FROM users", result_summary="10 rows", intent_type="SIMPLE_SELECT")
-        assert len(svc._sessions["s1"]) == 1
-        t = svc._sessions["s1"][0]
+        key = svc._key("s1", "default")
+        assert len(svc._sessions[key]) == 1
+        t = svc._sessions[key][0]
         assert t.query == "show users"
 
     @pytest.mark.asyncio
     async def test_add_turn_auto_creates_session(self) -> None:
         svc = InMemorySessionService()
         await svc.add_turn("new-session", "hello")
-        assert "new-session" in svc._sessions
+        key = svc._key("new-session", "default")
+        assert key in svc._sessions
 
     @pytest.mark.asyncio
     async def test_max_turns_enforced(self) -> None:
@@ -72,8 +74,9 @@ class TestInMemorySessionService:
         svc._max_turns = 3
         for i in range(5):
             await svc.add_turn("s1", f"query {i}")
-        assert len(svc._sessions["s1"]) == 3
-        assert svc._sessions["s1"][-1].query == "query 4"
+        key = svc._key("s1", "default")
+        assert len(svc._sessions[key]) == 3
+        assert svc._sessions[key][-1].query == "query 4"
 
     def test_format_history_empty(self) -> None:
         svc = InMemorySessionService()
@@ -83,7 +86,8 @@ class TestInMemorySessionService:
     async def test_format_history_single_turn(self) -> None:
         svc = InMemorySessionService()
         await svc.add_turn("s1", "show users", sql="SELECT * FROM users", result_summary="10 rows returned")
-        result = svc.format_history(svc._sessions["s1"])
+        key = svc._key("s1", "default")
+        result = svc.format_history(svc._sessions[key])
         assert "show users" in result
         assert "SELECT * FROM users" in result
         assert "10 rows returned" in result
@@ -93,7 +97,8 @@ class TestInMemorySessionService:
         svc = InMemorySessionService()
         for i in range(5):
             await svc.add_turn("s1", f"query {i}")
-        result = svc.format_history(svc._sessions["s1"], max_turns=2)
+        key = svc._key("s1", "default")
+        result = svc.format_history(svc._sessions[key], max_turns=2)
         assert "query 3" in result
         assert "query 4" in result
         assert "query 0" not in result
@@ -187,7 +192,7 @@ class TestPipelineSessionIntegration:
             session_id="s2",
         )
 
-        turns = session_svc._sessions["s2"]
+        turns = session_svc._sessions[session_svc._key("s2", "default")]
         assert len(turns) == 2
         assert turns[-1].query == "show users"
         assert turns[-1].sql == "SELECT * FROM users"

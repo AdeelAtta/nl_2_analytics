@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { ChevronDown, ChevronRight, Copy, Check, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { useUIStore } from "@/stores/ui";
-import type { QueryResult, StageResult, ColumnInfo } from "@/stores/query";
+import type { QueryResult, ColumnInfo } from "@/stores/query";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
 
@@ -22,7 +21,6 @@ export function ChatMessage({ query, result, loading, error, queryId }: ChatMess
   const token = useAuthStore((s) => s.token);
   const addToast = useUIStore((s) => s.addToast);
   const [showSql, setShowSql] = useState(true);
-  const [showStages, setShowStages] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
@@ -126,37 +124,7 @@ export function ChatMessage({ query, result, loading, error, queryId }: ChatMess
             </div>
           )}
 
-          {result.stages && result.stages.length > 0 && (
-            <div className="rounded-lg border">
-              <button
-                onClick={() => setShowStages(!showStages)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/50"
-              >
-                {showStages ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                Pipeline ({result.total_duration_ms.toFixed(0)}ms)
-              </button>
-              {showStages && (
-                <div className="border-t px-3 py-2 space-y-1.5">
-                  {result.stages.map((s: StageResult, i: number) => (
-                    <div key={i}>
-                      {i > 0 && <Separator className="my-1" />}
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`h-1.5 w-1.5 rounded-full ${
-                            s.status === "success" || s.status === "dry_run"
-                              ? "bg-green-500"
-                              : s.status === "skipped" ? "bg-yellow-400" : "bg-red-500"
-                          }`} />
-                          <span className="font-medium capitalize">{s.name}</span>
-                        </div>
-                        <span className="text-muted-foreground">{s.duration_ms.toFixed(0)}ms</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+
 
           <div className="flex items-center gap-2">
             <button

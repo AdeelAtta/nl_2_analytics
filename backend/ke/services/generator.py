@@ -190,9 +190,11 @@ class NL2SQLGenerator:
         joins_str = "; ".join(f"{j.get('source_table', '')}.{j.get('source_column', '')} = {j.get('target_table', '')}.{j.get('target_column', '')}" for j in intent.join_edges) if intent.join_edges else "None"
         intent_desc = format_intent_description(intent.model_dump())
         conversation_history = context.get("conversation_history", "") if context else ""
+        graph_context = context.get("graph_context", "") if context else ""
         return template.format(
             dialect=dialect,
             schema_ddl=schema_ddl or "No schema available",
+            graph_context=graph_context,
             conversation_history=conversation_history + "\n" if conversation_history else "",
             query=query,
             intent_description=intent_desc,
