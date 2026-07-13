@@ -14,8 +14,12 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+_dsn = settings.postgres_dsn
+if "+" not in _dsn.split("://")[0]:
+    _dsn = _dsn.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 engine = create_async_engine(
-    settings.postgres_dsn,
+    _dsn,
     pool_size=20,
     max_overflow=10,
     pool_pre_ping=True,
