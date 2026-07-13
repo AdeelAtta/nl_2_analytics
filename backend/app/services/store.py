@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+import bcrypt as _bcrypt
+from sqlalchemy import text
+
+from app.core.database import async_session_factory
+
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data")
 
 
 class FileStore:
+    """File-based JSON store for non-critical data (API keys)."""
+
     def __init__(self, filename: str) -> None:
         self._path = os.path.join(DATA_DIR, filename)
         os.makedirs(DATA_DIR, exist_ok=True)
@@ -64,57 +70,122 @@ class FileStore:
         self._save()
 
 
-_tenant_store = FileStore("tenants.json")
-_user_store = FileStore("users.json")
+async def create_tenant(name: str, owner_email: str) -> dict[str, Any]:
+    async with async_session_factory() as session:
+        tid = str(uuid.uuid4())
+        slug = name.lower().replace(" ", "-")[:50]
+        await session.execute(
+            text("""
+                INSERT INTO auth.tenants (id, name, slug, owner_email, status, created_at)
+                VALUES (:id, :name, :slug, :email, 'active', :now)
+            """),
+            {"id": tid, "name": name, "slug": slug, "email": owner_email, "now": datetime.now(UTC)},
+        )
+        await session.commit()
+        return {
+            "id": tid,
+            "name": name,
+            "slug": slug,
+            "owner_email": owner_email,
+            "created_at": str(datetime.now(UTC)),
+            "status": "active",
+        }
 
 
-def get_tenant_store() -> FileStore:
-    return _tenant_store
+async def create_user(email: str, password: str, tenant_id: str, name: str = "") -> dict[str, Any]:
+    async with async_session_factory() as session:
+        result = await session.execute(
+            text("SELECT id FROM auth.users WHERE email = :email"),
+            {"email": email},
+        )
+        if result.scalar_one_or_none():
+            raise ValueError("Email already registered")
+
+        uid = str(uuid.uuid4())
+        pwd_hash = _bcrypt.hashpw(password.encode(), _bcrypt.gensalt()).decode()
+        await session.execute(
+            text("""
+                INSERT INTO auth.users (id, email, password_hash, name, role, tenant_id, created_at)
+                VALUES (:id, :email, :pwd, :name, 'admin', :tid, :now)
+            """),
+            {
+                "id": uid, "email": email, "pwd": pwd_hash,
+                "name": name or email.split("@")[0],
+                "tid": tenant_id, "now": datetime.now(UTC),
+            },
+        )
+        await session.commit()
+        return {
+            "id": uid,
+            "email": email,
+            "name": name or email.split("@")[0],
+            "password_hash": pwd_hash,
+            "role": "admin",
+            "tenant_id": tenant_id,
+            "created_at": str(datetime.now(UTC)),
+        }
 
 
-def get_user_store_file() -> FileStore:
-    return _user_store
+async def authenticate_user(email: str, password: str) -> dict[str, Any] | None:
+    async with async_session_factory() as session:
+        result = await session.execute(
+            text("""
+                SELECT id, email, password_hash, name, role, tenant_id, created_at
+                FROM auth.users WHERE email = :email
+            """),
+            {"email": email},
+        )
+        row = result.fetchone()
+        if row is None:
+            return None
+        if not _bcrypt.checkpw(password.encode(), row[2].encode()):
+            return None
+        return {
+            "id": str(row[0]),
+            "email": row[1],
+            "name": row[3],
+            "role": row[4],
+            "tenant_id": str(row[5]),
+            "created_at": str(row[6]),
+        }
 
 
-def create_tenant(name: str, owner_email: str) -> dict[str, Any]:
-    store = get_tenant_store()
-    tenant = {
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "slug": name.lower().replace(" ", "-")[:50],
-        "owner_email": owner_email,
-        "created_at": str(datetime.now(UTC)),
-        "status": "active",
-    }
-    store.insert(tenant)
-    return tenant
+async def get_tenant(tenant_id: str) -> dict[str, Any] | None:
+    async with async_session_factory() as session:
+        result = await session.execute(
+            text("SELECT id, name, slug, owner_email, status FROM auth.tenants WHERE id = :id"),
+            {"id": tenant_id},
+        )
+        row = result.fetchone()
+        if row is None:
+            return None
+        return {"id": str(row[0]), "name": row[1], "slug": row[2],
+                "owner_email": row[3], "status": row[4]}
 
 
-def create_user(email: str, password: str, tenant_id: str, name: str = "") -> dict[str, Any]:
-    import bcrypt as _bcrypt
-    store = get_user_store_file()
-    if store.find("email", email):
-        raise ValueError("Email already registered")
-    pwd_hash = _bcrypt.hashpw(password.encode(), _bcrypt.gensalt()).decode()
-    user = {
-        "id": str(uuid.uuid4()),
-        "email": email,
-        "name": name or email.split("@")[0],
-        "password_hash": pwd_hash,
-        "role": "admin",
-        "tenant_id": tenant_id,
-        "created_at": str(datetime.now(UTC)),
-    }
-    store.insert(user)
-    return user
+async def get_tenants_by_user(user_id: str) -> list[dict[str, Any]]:
+    async with async_session_factory() as session:
+        result = await session.execute(
+            text("SELECT id, name, slug, owner_email, status FROM auth.tenants"),
+        )
+        return [
+            {"id": str(r[0]), "name": r[1], "slug": r[2],
+             "owner_email": r[3], "status": r[4]}
+            for r in result.fetchall()
+        ]
 
 
-def authenticate_user(email: str, password: str) -> dict[str, Any] | None:
-    import bcrypt as _bcrypt
-    store = get_user_store_file()
-    user = store.find("email", email)
-    if not user:
-        return None
-    if not _bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
-        return None
-    return user
+async def get_users_by_tenant(tenant_id: str) -> list[dict[str, Any]]:
+    async with async_session_factory() as session:
+        result = await session.execute(
+            text("""
+                SELECT id, email, name, role, tenant_id, created_at
+                FROM auth.users WHERE tenant_id = :tid
+            """),
+            {"tid": tenant_id},
+        )
+        return [
+            {"id": str(r[0]), "email": r[1], "name": r[2],
+             "role": r[3], "tenant_id": str(r[4])}
+            for r in result.fetchall()
+        ]

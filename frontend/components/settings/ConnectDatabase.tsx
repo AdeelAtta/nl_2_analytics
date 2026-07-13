@@ -89,6 +89,18 @@ export function ConnectDatabase() {
     setTesting(false);
   };
 
+  const handleDemo = () => {
+    setConnName("Chinook Demo");
+    setDbType("postgresql");
+    setHost("postgres");
+    setPort("5432");
+    setDbName("chinook");
+    setUsername("postgres");
+    setPassword("postgres");
+    setSsl(false);
+    addToast("Demo database details filled — click Sync Schema to import", "info");
+  };
+
   const handleSync = async () => {
     if (!token) return;
     setSyncing(true); setSyncResult(null);
@@ -191,6 +203,9 @@ export function ConnectDatabase() {
           {testResult === "error" && <p className="mt-2 text-sm text-destructive">Connection failed — check your credentials</p>}
 
           <div className="mt-4 flex gap-2">
+            <Button variant="secondary" onClick={handleDemo} disabled={!token}>
+              Try Chinook Demo
+            </Button>
             <Button variant="outline" onClick={handleTest} disabled={testing || !token}>
               {testing ? "Testing..." : "Test Connection"}
             </Button>

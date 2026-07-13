@@ -69,12 +69,13 @@ async def demo_login(body: DemoLoginRequest) -> AuthResponse:
 async def register(body: RegisterRequest) -> AuthResponse:
     try:
         if body.tenant_name:
-            tenant = create_tenant(body.tenant_name, body.email)
+            tenant = await create_tenant(body.tenant_name, body.email)
             tenant_id = tenant["id"]
         else:
-            tenant_id = "demo"
+            tenant = await create_tenant(f"{body.name or body.email.split('@')[0]}'s Org", body.email)
+            tenant_id = tenant["id"]
 
-        user = create_user(body.email, body.password, tenant_id, body.name)
+        user = await create_user(body.email, body.password, tenant_id, body.name)
     except ValueError as e:
         detail = str(e)
         if "already registered" in detail.lower():
@@ -90,7 +91,7 @@ async def register(body: RegisterRequest) -> AuthResponse:
 
 @router.post("/auth/login", response_model=AuthResponse)
 async def login(body: LoginRequest) -> AuthResponse:
-    user = authenticate_user(body.email, body.password)
+    user = await authenticate_user(body.email, body.password)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid email or password")

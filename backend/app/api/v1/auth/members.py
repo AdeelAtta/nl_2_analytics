@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.dependencies import get_current_user
-from app.services.store import FileStore, get_user_store_file
+from app.services.store import FileStore, get_users_by_tenant
 
 router = APIRouter(prefix="/api/v1/tenants/members", tags=["tenants"])
 _invites_store = FileStore("invites.json")
@@ -20,8 +20,7 @@ async def list_members(
     if current_user.get("sub") == "anonymous":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     tenant_id = current_user.get("tenant_id", "demo")
-    users = get_user_store_file()
-    members = [u for u in users.all() if u.get("tenant_id") == tenant_id]
+    members = await get_users_by_tenant(tenant_id)
     return {
         "success": True,
         "data": [

@@ -14,10 +14,13 @@ os.environ.setdefault("KE_API_TOKEN", "ke_dev_token_2026")
 
 
 @pytest.fixture(autouse=True)
-def _clear_stores() -> None:
-    from app.services.store import get_tenant_store, get_user_store_file
-    get_tenant_store().clear()
-    get_user_store_file().clear()
+async def _clear_stores() -> None:
+    from app.core.database import async_session_factory
+    from sqlalchemy import text
+    async with async_session_factory() as session:
+        await session.execute(text("DELETE FROM auth.users"))
+        await session.execute(text("DELETE FROM auth.tenants"))
+        await session.commit()
 
 
 @pytest.fixture

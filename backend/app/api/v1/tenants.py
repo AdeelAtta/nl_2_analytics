@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.auth.dependencies import get_current_user
-from app.services.store import create_tenant, get_tenant_store
+from app.services.store import create_tenant, get_tenant, get_tenants_by_user
 
 router = APIRouter(prefix="/api/v1/tenants", tags=["tenants"])
 
@@ -16,8 +16,7 @@ async def list_tenants(
 ) -> dict[str, Any]:
     if current_user.get("sub") == "anonymous":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-    store = get_tenant_store()
-    tenants = store.all()
+    tenants = await get_tenants_by_user(current_user.get("sub", ""))
     return {
         "success": True,
         "data": [
@@ -38,7 +37,7 @@ async def create_tenant_endpoint(
     name = (body.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=422, detail="Tenant name is required")
-    tenant = create_tenant(name, current_user.get("sub", "unknown"))
+    tenant = await create_tenant(name, current_user.get("sub", "unknown"))
     return {
         "success": True,
         "data": {"id": tenant["id"], "name": tenant["name"], "slug": tenant["slug"]},
@@ -53,8 +52,7 @@ async def current_tenant(
     if current_user.get("sub") == "anonymous":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     tenant_id = current_user.get("tenant_id", "demo")
-    store = get_tenant_store()
-    tenant = store.find("id", tenant_id) or store.find("slug", tenant_id)
+    tenant = await get_tenant(tenant_id)
     if not tenant:
         tenant = {"id": tenant_id, "name": tenant_id, "slug": tenant_id, "status": "active"}
     return {
