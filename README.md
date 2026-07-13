@@ -2,6 +2,16 @@
 
 Schema-aware natural language to SQL — knows your database schema and generates accurate, safe SQL queries.
 
+## Live Demo
+
+| Service | URL | Stack |
+|---|---|---|
+| **Frontend** | [nl-2-analytics.vercel.app](https://nl-2-analytics.vercel.app) | Next.js 15 on Vercel (free) |
+| **Backend API** | [schemaintern-backend.onrender.com](https://schemaintern-backend.onrender.com) | FastAPI on Render (free) |
+| **Database** | Render PostgreSQL (managed) | PostgreSQL 16 (free) |
+
+Register an account, connect your database, and start querying in natural language.
+
 ## Architecture
 
 SchemaIntern connects to enterprise databases (PostgreSQL, MySQL, Snowflake, BigQuery) and lets users ask questions in natural language. The platform:
@@ -43,10 +53,11 @@ Set your HuggingFace token for AI-generated table/column descriptions:
 HF_TOKEN=hf_your_token_here
 ```
 
-| Service | URL |
-|---|---|
-| Frontend | `http://localhost:3000` |
-| API | `http://localhost:8100` |
+| Service | URL | Default Credentials |
+|---|---|---|
+| Frontend | `http://localhost:3000` | — |
+| API | `http://localhost:8100` | — |
+| PostgreSQL | `localhost:5432` | `postgres` / `postgres` (8 test databases auto-seeded) |
 
 Stop with `docker compose -f docker-compose.dev.yml down`.
 
@@ -56,13 +67,14 @@ Starts with nginx reverse proxy — single port, no hot-reload.
 
 ```bash
 cp .env.prod.example .env.prod
-# Edit .env.prod with strong secrets
+# Edit .env.prod with strong secrets (POSTGRES_PASSWORD, JWT_SECRET)
 docker compose up --build
 ```
 
-| Service | URL |
-|---|---|
-| App | `http://localhost:8080` |
+| Service | URL | Notes |
+|---|---|---|
+| App | `http://localhost:8080` | Single entry point |
+| PostgreSQL | Internal (Docker) | No test databases in production |
 
 Migrations run automatically on startup.
 
@@ -88,32 +100,40 @@ make dev
 
 ### Test Databases
 
-On first start, all 8 test databases are auto-seeded:
+On first start, all 8 test databases are auto-seeded into PostgreSQL:
 
-| Database | Description |
-|---|---|
-| `chinook` | Music store (artists, albums, tracks) |
-| `dvdrental` | DVD rental store |
-| `happiness_index` | World happiness report |
-| `lego` | Lego sets and parts |
-| `netflix` | Netflix titles |
-| `pagila` | DVD rental (PostgreSQL port) |
-| `periodic_table` | Chemical elements |
-| `titanic` | Passenger survival data |
+| Database | Description | Tables |
+|---|---|---|
+| `chinook` | Music store | Artist, Album, Track, Customer, Invoice, Employee, Genre, Playlist, MediaType, InvoiceLine, PlaylistTrack |
+| `titanic` | Passenger survival data | passenger |
+| `dvdrental` | DVD rental store | actor, film, customer, rental, payment, category, language, inventory, staff, store |
+| `lego` | Lego sets and parts | sets, themes, parts, colors, inventories, part_categories |
+| `netflix` | Netflix titles | titles, cast, genres, directors, countries |
+| `pagila` | DVD rental (PostgreSQL port) | Same structure as dvdrental |
+| `periodic_table` | Chemical elements | elements, types |
+| `happiness_index` | World happiness report | happiness, regions, year |
 
-Connect from the web UI via **Settings → Connections → Add Connection**:
+### Quick Demo (Docker only)
 
-| Field | Docker | Native |
+Use the **"Try Chinook Demo"** button on the **Settings → Connections** page to auto-fill and sync.
+
+### Manual Connection
+
+Go to **Settings → Connections** and enter:
+
+| Field | Docker (dev stack) | Native (local) |
 |---|---|---|
 | Host | `postgres` | `localhost` |
 | Port | `5432` | `5432` |
-| Database | `titanic` (or any above) | same |
-| User | `postgres` | `postgres` |
+| Database | `chinook` (or any above) | same |
+| Username | `postgres` | `postgres` |
 | Password | `postgres` | `postgres` |
 
-Try queries like `"how many male passengers?"` or `"all employees in Sales"`.
+Click **Test Connection**, then **Sync Schema**. Once synced, the database appears in the dropdown on the **Query** and **Schema** pages.
 
-> **Docker tip**: Use `postgres` as the host (Docker service name) when connecting from the backend container. `host.docker.internal` is for reaching your host machine, not other containers.
+Try queries: `"how many male passengers?"`, `"list all Rock tracks"`, `"total sales by country"`.
+
+> **Docker tip**: Use `postgres` as the host (Docker service name) — it resolves to the PostgreSQL container via Docker's internal DNS.
 
 ### Environment Files
 
