@@ -17,7 +17,7 @@
 ### Expected (per Engineering-Standards §2.1)
 
 ```
-openquery/
+schemaintern/
 ├── .github/workflows/
 ├── .github/CODEOWNERS
 ├── .github/PULL_REQUEST_TEMPLATE.md
@@ -216,9 +216,6 @@ openquery/
 
 ### Files Reviewed
 - `.devcontainer/devcontainer.json` — Dev container
-- `infra/terraform/{main,variables,outputs,versions}.tf` — Terraform stubs
-- `infra/k8s/{namespace,backend-deployment,backend-service,configmap,hpa}.yaml` — K8s manifests
-- `infra/helm/openquery/{Chart.yaml,values.yaml,templates/*}` — Helm chart
 - `infra/scripts/{setup,docker-build,docker-push}.sh`
 
 ### Findings
@@ -313,7 +310,7 @@ openquery/
 
 | # | Finding | Severity | Impact | Remediation | Owner |
 |---|---------|----------|--------|-------------|-------|
-| TST-01 | **Root-level `tests/unit/test_config.py` tests a different `Settings` class** | **HIGH** | `TestSettings` uses `OPENQUERY__` prefix and different field names than the actual `Settings` in `backend/app/core/config.py`. These tests pass but validate the wrong configuration model. | Either remove root-level tests (move integration to backend/tests/) or align them with the real `Settings` class. | QA Agent |
+| TST-01 | **Root-level `tests/unit/test_config.py` tests a different `Settings` class** | **HIGH** | `TestSettings` uses `SCHEMAINTERN__` prefix and different field names than the actual `Settings` in `backend/app/core/config.py`. These tests pass but validate the wrong configuration model. | Either remove root-level tests (move integration to backend/tests/) or align them with the real `Settings` class. | QA Agent |
 | TST-02 | **No frontend tests** | **HIGH** | `package.json` has no `test` script. No Jest/Vitest/Playwright configured. Frontend has no test coverage at all. | Install Vitest + React Testing Library. Add at least smoke test for layout. | Frontend Agent |
 | TST-03 | Test coverage is 0% for meaningful code | Medium | Only health endpoint tests exist. No tests for middleware, auth, config edge cases. | Acceptable for Sprint 0. Coverage targets for Sprint 1. | — |
 | TST-04 | Integration tests skip silently with no CI warning | Low | `pytest -m "not integration"` would need to be used, but currently all tests run without markers. | Add `integration` marker to integration tests. | QA Agent |

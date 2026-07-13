@@ -773,7 +773,7 @@ resources:
     pod: { resource: "pod" }
 metricsQuery: >
   avg by (<<.GroupBy>>) (
-    vllm:num_requests_waiting{namespace="openquery"}
+    vllm:num_requests_waiting{namespace="schemaintern"}
   )
 
 # HPA using custom metric

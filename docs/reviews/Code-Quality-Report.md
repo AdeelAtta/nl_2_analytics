@@ -1,6 +1,6 @@
 # Code Quality Report
 
-**Project:** OpenQuery
+**Project:** SchemaIntern
 **Date:** 2026-07-11
 **Score:** 70/100 (C)
 **Risk Level:** MEDIUM

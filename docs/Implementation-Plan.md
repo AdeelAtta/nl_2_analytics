@@ -297,14 +297,12 @@ Every task file uses this status convention:
 | ORM | SQLAlchemy | 2.0+ | `backend/ke/stores/` |
 | DB driver (PG) | asyncpg | 0.30+ | `backend/ke/stores/` |
 | Vector store client | Qdrant client | 1.12+ | `backend/ke/stores/vector/` |
-| LLM inference | vLLM + SGLang | latest | `infra/k8s/gpu/` |
+| LLM inference | vLLM + SGLang | latest | — |
 | Embeddings | BGE-M3 (sentence-transformers) | latest | `backend/schema-intelligence/embedders/` |
 | SQL parser | sqlglot | latest | `backend/query-pipeline/policy/` |
 | Frontend | React 19 + Next.js 15 | latest | `frontend/` |
 | UI kit | shadcn/ui + Tailwind CSS | latest | `frontend/` |
 | Docker | Docker | 27+ | `infra/docker/` |
-| K8s | Kubernetes | 1.30+ | `infra/k8s/` |
-| IaC | Terraform | 1.9+ | `infra/terraform/` |
 | CI/CD | GitHub Actions | — | `.github/workflows/` |
 
 ---

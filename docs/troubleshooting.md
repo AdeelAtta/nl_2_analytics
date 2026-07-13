@@ -46,12 +46,12 @@ Ports used by this project:
 2. **Wrong credentials in `.env`**
    Ensure `POSTGRES_DSN` matches `docker-compose.yml`:
    ```
-   POSTGRES_DSN=postgresql+asyncpg://openquery:openquery_dev@localhost:5432/openquery
+   POSTGRES_DSN=postgresql+asyncpg://schemaintern:schemaintern_dev@localhost:5432/schemaintern
    ```
 
 3. **Database doesn't exist**
    ```bash
-   docker exec -it openquery-postgres psql -U openquery -c "CREATE DATABASE openquery;"
+   docker exec -it schemaintern-postgres psql -U schemaintern -c "CREATE DATABASE schemaintern;"
    ```
 
 4. **Connection pool exhausted**
@@ -79,7 +79,7 @@ Ports used by this project:
 
 3. **Redis container not healthy**
    ```bash
-   docker logs openquery-redis
+   docker logs schemaintern-redis
    ```
 
 ## Qdrant Connection Refused
@@ -129,7 +129,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 
 ```bash
 # Check logs
-docker logs openquery-postgres
+docker logs schemaintern-postgres
 
 # Rebuild and restart
 docker compose -f infra/docker/docker-compose.yml down
@@ -276,7 +276,7 @@ cd backend && uv run uvicorn app.main:create_app --reload --reload-dir app --por
 curl http://localhost:8100/api/v1/health/live
 
 # Check backend is running
-docker ps | grep openquery-backend
+docker ps | grep schemaintern-backend
 
 # Check backend logs
 cd backend && uv run -- logs/app.log

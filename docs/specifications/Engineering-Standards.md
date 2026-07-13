@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-This document defines the engineering standards for the OpenQuery platform. All code, infrastructure, documentation, and processes must conform to these standards unless explicitly exempted by an Architecture Decision Record (ADR).
+This document defines the engineering standards for the SchemaIntern platform. All code, infrastructure, documentation, and processes must conform to these standards unless explicitly exempted by an Architecture Decision Record (ADR).
 
 These standards apply to all 10 engineers and AI agents working on the platform. They are designed to be followed without requiring architect consultation.
 
@@ -18,7 +18,7 @@ These standards apply to all 10 engineers and AI agents working on the platform.
 ### 2.1 Repository Layout
 
 ```
-openquery/
+schemaintern/
 ├── .github/
 │   ├── workflows/          # CI/CD pipeline definitions
 │   ├── CODEOWNERS          # Ownership assignments
@@ -231,7 +231,7 @@ Each backend service MUST live in its own directory under `src/backend/` with:
 | K8s resources | kebab-case | `api-deployment` |
 | K8s labels | kebab-case | `app.kubernetes.io/name` |
 | Helm values | camelCase | `replicaCount` |
-| Docker images | kebab-case | `openquery/public-api` |
+| Docker images | kebab-case | `schemaintern/public-api` |
 | CI/CD jobs | kebab-case | `deploy-production` |
 | Environment variables | UPPER_SNAKE_CASE | `DATABASE_URL` |
 
@@ -577,29 +577,29 @@ Defined in `.github/CODEOWNERS`:
 
 ```
 # Default
-* @openquery/tech-leads
+* @schemaintern/tech-leads
 
 # Backend
-/src/backend/public-api/ @openquery/backend-team
-/src/backend/ke-api/ @openquery/backend-team
-/src/backend/query-pipeline/ @openquery/ml-team
-/src/backend/schema-intel/ @openquery/ml-team
-/src/backend/learning-loop/ @openquery/ml-team
-/src/backend/auth/ @openquery/security-team
+/src/backend/public-api/ @schemaintern/backend-team
+/src/backend/ke-api/ @schemaintern/backend-team
+/src/backend/query-pipeline/ @schemaintern/ml-team
+/src/backend/schema-intel/ @schemaintern/ml-team
+/src/backend/learning-loop/ @schemaintern/ml-team
+/src/backend/auth/ @schemaintern/security-team
 
 # Frontend
-/src/frontend/ @openquery/frontend-team
+/src/frontend/ @schemaintern/frontend-team
 
 # Infrastructure
-/src/infrastructure/ @openquery/infra-team
+/src/infrastructure/ @schemaintern/infra-team
 
 # Documentation
-/docs/ @openquery/tech-leads
-/docs/specifications/ @openquery/architect
-/docs/decisions/ @openquery/architect
+/docs/ @schemaintern/tech-leads
+/docs/specifications/ @schemaintern/architect
+/docs/decisions/ @schemaintern/architect
 
 # CI/CD
-/.github/workflows/ @openquery/infra-team
+/.github/workflows/ @schemaintern/infra-team
 ```
 
 ### 11.2 Ownership Responsibilities

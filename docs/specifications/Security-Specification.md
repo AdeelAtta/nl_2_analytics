@@ -289,20 +289,20 @@ Validate output:
 
 ```
 -- Target database read-only user
-CREATE USER openquery_reader WITH PASSWORD '[random]';
-GRANT CONNECT ON DATABASE target_db TO openquery_reader;
-GRANT USAGE ON SCHEMA public TO openquery_reader;
+CREATE USER schemaintern_reader WITH PASSWORD '[random]';
+GRANT CONNECT ON DATABASE target_db TO schemaintern_reader;
+GRANT USAGE ON SCHEMA public TO schemaintern_reader;
 
 -- Grant SELECT only on authorized tables (per-tenant)
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO openquery_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO schemaintern_reader;
 
 -- Revoke all dangerous functions
-REVOKE ALL ON FUNCTION pg_sleep FROM openquery_reader;
-REVOKE ALL ON FUNCTION pg_read_file FROM openquery_reader;
-REVOKE ALL ON FUNCTION pg_read_binary_file FROM openquery_reader;
+REVOKE ALL ON FUNCTION pg_sleep FROM schemaintern_reader;
+REVOKE ALL ON FUNCTION pg_read_file FROM schemaintern_reader;
+REVOKE ALL ON FUNCTION pg_read_binary_file FROM schemaintern_reader;
 
 -- Set statement timeout (30 seconds)
-ALTER ROLE openquery_reader SET statement_timeout = '30s';
+ALTER ROLE schemaintern_reader SET statement_timeout = '30s';
 ```
 
 ### 4.4 Parameterized Query Execution
@@ -1347,11 +1347,11 @@ class AuditChain:
 
 ```
 # VDP (security.txt)
-Canonical: https://openquery.io/.well-known/security.txt
-Contact: https://hackerone.com/openquery
-Encryption: https://openquery.io/pgp-key.txt
-Policy: https://openquery.io/security-policy
-Hiring: https://openquery.io/careers
+Canonical: https://schemaintern.io/.well-known/security.txt
+Contact: https://hackerone.com/schemaintern
+Encryption: https://schemaintern.io/pgp-key.txt
+Policy: https://schemaintern.io/security-policy
+Hiring: https://schemaintern.io/careers
 ```
 
 ---
@@ -1464,12 +1464,12 @@ Annually:
 
 | Role | Name/Team | Contact | Escalation |
 |------|-----------|---------|------------|
-| CISO | Security team lead | ciso@openquery.io | CEO |
-| Security engineer | On-call rotation | security@openquery.io | CISO |
-| Incident response | On-call SRE | incident@openquery.io | VP Eng |
-| Bug bounty | HackerOne | h1-openquery@openquery.io | Security team |
-| Compliance | Legal team | compliance@openquery.io | CISO |
-| Privacy | Data protection officer | dpo@openquery.io | CEO |
+| CISO | Security team lead | ciso@schemaintern.io | CEO |
+| Security engineer | On-call rotation | security@schemaintern.io | CISO |
+| Incident response | On-call SRE | incident@schemaintern.io | VP Eng |
+| Bug bounty | HackerOne | h1-schemaintern@schemaintern.io | Security team |
+| Compliance | Legal team | compliance@schemaintern.io | CISO |
+| Privacy | Data protection officer | dpo@schemaintern.io | CEO |
 
 ---
 

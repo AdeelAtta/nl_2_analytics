@@ -85,7 +85,7 @@
 
 ```json
 {
-  "name": "OpenQuery Development",
+  "name": "SchemaIntern Development",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
@@ -837,7 +837,7 @@ Models are deployed via Helm chart with model-specific values (GPU memory, pods 
 ### 23.2 Air-Gapped Bundle
 
 ```
-openquery-airgapped-v1.0.0/
+schemaintern-airgapped-v1.0.0/
 ├── checksums.sha256
 ├── manifest.yaml
 ├── images/                    # All container images (docker save)
