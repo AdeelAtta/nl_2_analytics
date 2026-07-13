@@ -1,6 +1,4 @@
-# Dev environment — starts all services with hot-reload for local development.
-# Usage: docker compose -f docker-compose.dev.yml up --build
-# Stop:  docker compose -f docker-compose.dev.yml down
+name: schemaintern-dev
 
 services:
   postgres:
