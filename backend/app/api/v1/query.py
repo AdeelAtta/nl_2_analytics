@@ -5,15 +5,17 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.auth.dependencies import get_current_user
-from app.core.database import get_session
+from app.core.database import async_session_factory
 from ke.models.pipeline import PipelineResult
 from ke.services.pipeline import PipelineOrchestrator
 from ke.services.history import QueryHistoryService
+from ke.services.session import InMemorySessionService
 from ke.stores.query.repository import QueryHistoryRepository, QueryFeedbackRepository
 
 router = APIRouter(prefix="/api/v1/query", tags=["query"])
 
 _orchestrator: PipelineOrchestrator | None = None
+_session_service: InMemorySessionService = InMemorySessionService()
 
 
 def _get_orchestrator() -> PipelineOrchestrator:
@@ -28,7 +30,8 @@ async def execute_query(
     request: Request,
     body: dict[str, Any],
     current_user: dict[str, str] = Depends(get_current_user),
-    orchestrator: PipelineOrchestrator = Depends(_get_orchestrator),
+        orchestrator: PipelineOrchestrator = Depends(_get_orchestrator),
+        session_service: InMemorySessionService = Depends(lambda: _session_service),
 ) -> dict[str, Any]:
     if current_user.get("sub") == "anonymous":
         raise HTTPException(
@@ -44,12 +47,13 @@ async def execute_query(
         )
 
     tenant_id = getattr(request.state, "tenant_id", current_user.get("tenant_id", "demo"))
+    db_name = body.get("database", "")
 
     if body.get("dry_run") == "preview":
         from ke.services.schema_registry import get_schema
         from ke.services.intent import IntentAgent
         from ke.services.prompts import format_schema_ddl
-        schema_data = get_schema(tenant_id)
+        schema_data = get_schema(tenant_id, db_name)
         if not schema_data:
             return {"success": False, "error": "No schema synced for this tenant. Sync a database first."}
         intent = IntentAgent().classify(query, schema_data)
@@ -59,22 +63,33 @@ async def execute_query(
     session_id = body.get("session_id")
     dry_run = body.get("dry_run", True)
 
-    result: PipelineResult = await orchestrator.execute(
-        tenant_id=tenant_id,
-        query=query,
-        session_id=session_id,
-        dry_run=dry_run,
-    )
+    try:
+        result: PipelineResult = await orchestrator.execute(
+            tenant_id=tenant_id,
+            query=query,
+            session_id=session_id,
+            dry_run=dry_run,
+            db_name=db_name,
+            session_service=session_service,
+        )
+    except Exception:
+        import logging
+        logging.exception("Pipeline execution failed")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Query execution failed")
 
     # Save to query history
     try:
-        async with get_session() as session:
+        import logging
+        logging.getLogger(__name__).info("Saving query history: session_id=%s", result.session_id)
+        async with async_session_factory() as session:
             history_svc = QueryHistoryService(
                 history_repo=QueryHistoryRepository(session),
                 feedback_repo=QueryFeedbackRepository(session),
             )
             await history_svc.save(
                 tenant_id=tenant_id,
+                database=db_name,
+                session_id=result.session_id or None,
                 user_id=current_user.get("sub", ""),
                 query=query,
                 sql=result.sql or "",
@@ -86,6 +101,7 @@ async def execute_query(
                 guard_stopped_at=result.guard_stopped_at,
                 stage_data=[s.model_dump() for s in result.stages],
             )
+            await session.commit()
     except Exception:
         import logging
         logging.exception("Failed to save query history")
@@ -93,7 +109,7 @@ async def execute_query(
     resp = _pipeline_to_response(result)
     from ke.services.explain import explain_sql, extract_columns
     resp["explanation"] = explain_sql(result.sql or "", result.query)
-    resp["columns"] = extract_columns(result.sql or "", tenant_id)
+    resp["columns"] = extract_columns(result.sql or "", tenant_id, db_name)
     return resp
 
 

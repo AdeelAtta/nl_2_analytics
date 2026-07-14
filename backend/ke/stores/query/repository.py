@@ -23,6 +23,7 @@ class QueryHistoryOrm(QueryBase):
 
     id = SAColumn(PG_UUID(), primary_key=True)
     tenant_id = SAColumn(String(64), nullable=False)
+    database = SAColumn(String(255), nullable=False, server_default="")
     user_id = SAColumn(String(64), nullable=True)
     session_id = SAColumn(String(64), nullable=True)
     query = SAColumn(Text(), nullable=False)
@@ -61,12 +62,15 @@ class QueryHistoryRepository(BaseRepository[QueryHistory]):
         pagination: PaginationParams | None = None,
         user_id: str | None = None,
         status_filter: str | None = None,
+        database: str | None = None,
     ) -> tuple[list[QueryHistory], int]:
         filters: dict[str, Any] = {"tenant_id": tenant_id}
         if user_id:
             filters["user_id"] = user_id
         if status_filter:
             filters["status"] = status_filter
+        if database:
+            filters["database"] = database
         return await self.list(filters=filters, pagination=pagination)
 
     async def mark_feedback(self, query_id: str) -> None:

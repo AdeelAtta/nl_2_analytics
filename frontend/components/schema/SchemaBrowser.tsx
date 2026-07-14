@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/auth";
+import { Database } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
 
@@ -18,6 +19,10 @@ interface TableInfo {
   sample_rows?: Record<string, unknown>[];
 }
 
+interface DbInfo {
+  name: string; database: string; table_count: number;
+}
+
 export function SchemaBrowser() {
   const token = useAuthStore((s) => s.token);
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -25,11 +30,15 @@ export function SchemaBrowser() {
   const [selected, setSelected] = useState<TableInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [databases, setDatabases] = useState<DbInfo[]>([]);
+  const [activeDb, setActiveDb] = useState("");
 
-  useEffect(() => {
+  const loadTables = (db: string) => {
     if (!token) return;
     setLoading(true);
-    fetch(`${API_URL}/schema/tables`, { headers: { Authorization: `Bearer ${token}` } })
+    setError("");
+    const url = db ? `${API_URL}/schema/tables?database=${encodeURIComponent(db)}` : `${API_URL}/schema/tables`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
         if (d.data) setTables(d.data);
@@ -37,13 +46,31 @@ export function SchemaBrowser() {
       })
       .catch(() => setError("Could not load schema"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_URL}/schema/databases`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.data && d.data.length > 0) {
+          setDatabases(d.data);
+          const first = d.data[0].database;
+          setActiveDb(first);
+          loadTables(first);
+        } else {
+          loadTables("");
+        }
+      })
+      .catch(() => loadTables(""));
   }, [token]);
 
   const loadTable = async (t: TableInfo) => {
     setSelected(t);
     if (t.columns) return;
     try {
-      const r = await fetch(`${API_URL}/schema/tables/${t.id}`, {
+      const url = activeDb !== "" ? `${API_URL}/schema/tables/${t.id}?database=${encodeURIComponent(activeDb)}` : `${API_URL}/schema/tables/${t.id}`;
+      const r = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const d = await r.json();
@@ -58,6 +85,25 @@ export function SchemaBrowser() {
   );
 
   return (
+    <div className="space-y-4">
+      {databases.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Database className="h-4 w-4 text-muted-foreground" />
+          <select
+            value={activeDb}
+            onChange={(e) => { setActiveDb(e.target.value); setSelected(null); loadTables(e.target.value); }}
+            className="rounded-md border bg-background px-2 py-1 text-xs font-medium outline-none"
+          >
+            {databases.map((db) => (
+              <option key={db.database} value={db.database}>
+                {db.name} ({db.table_count} tables)
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted-foreground">Database</span>
+        </div>
+      )}
+
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="w-full shrink-0 space-y-3 lg:w-72">
         <Input
@@ -189,6 +235,7 @@ export function SchemaBrowser() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

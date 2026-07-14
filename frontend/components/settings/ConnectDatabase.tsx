@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/auth";
 import { useUIStore } from "@/stores/ui";
+import { X, Database } from "lucide-react";
 
 interface SyncTable { name: string; columns: unknown[] }
 interface SyncData { tables: SyncTable[]; added: number; changed: number; removed: number }
-interface SavedConn { synced: boolean; connection: { db_type: string; host: string; port: number; database: string; username: string; table_count: number; synced_at: string } | null; table_count: number }
+interface DbInfo { name: string; database: string; db_type: string; host: string; table_count: number; synced_at: string }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
 const DB_TYPES = [
@@ -39,27 +40,22 @@ export function ConnectDatabase() {
   const [syncing, setSyncing] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
   const [syncResult, setSyncResult] = useState<SyncData | null>(null);
-  const [savedConn, setSavedConn] = useState<SavedConn | null>(null);
+  const [databases, setDatabases] = useState<DbInfo[]>([]);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadStatus = useCallback(() => {
     if (!token) return;
     fetch(`${API_URL}/sync/status`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
         if (d.success && d.data) {
-          setSavedConn(d.data);
-          if (d.data.connection) {
-            const c = d.data.connection;
-            setDbType(c.db_type || "postgresql");
-            setHost(c.host || "localhost");
-            setPort(String(c.port || 5432));
-            setDbName(c.database || "");
-            setUsername(c.username || "");
-          }
+          setDatabases(d.data.databases ?? []);
         }
       })
       .catch(() => {});
   }, [token]);
+
+  useEffect(() => { loadStatus(); }, [loadStatus]);
 
   const getConfig = () => ({
     name: connName, db_type: dbType, host, port: parseInt(port), database: dbName, username, password, ssl,
@@ -113,8 +109,8 @@ export function ConnectDatabase() {
       const d = await r.json();
       if (d.success) {
         setSyncResult(d.data);
-        setSavedConn((prev) => prev ? { ...prev, synced: true, table_count: d.data.tables.length, connection: { ...prev.connection!, table_count: d.data.tables.length } } : prev);
         addToast(`Synced ${d.data.tables.length} tables!`, "success");
+        loadStatus();
       } else {
         addToast(d.error || "Sync failed", "error");
       }
@@ -124,25 +120,59 @@ export function ConnectDatabase() {
     setSyncing(false);
   };
 
+  const handleDisconnect = async (db: string) => {
+    if (!token) return;
+    setDisconnecting(db);
+    try {
+      const r = await fetch(`${API_URL}/sync/${encodeURIComponent(db)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await r.json();
+      if (d.success) {
+        addToast(`Disconnected ${db}`, "success");
+        loadStatus();
+      } else {
+        addToast(d.error || "Disconnect failed", "error");
+      }
+    } catch {
+      addToast("Disconnect failed", "error");
+    }
+    setDisconnecting(null);
+  };
+
   return (
     <div className="space-y-6">
-      {savedConn?.synced && savedConn.connection && (
+      {databases.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Saved Connection</CardTitle>
-            <CardDescription>Last synced: {savedConn.connection.synced_at}</CardDescription>
+            <CardTitle>Connected Databases ({databases.length})</CardTitle>
+            <CardDescription>Synced databases available in Query and Schema pages</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">
-                  {savedConn.connection.db_type} — {savedConn.connection.host}:{savedConn.connection.port}/{savedConn.connection.database}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {savedConn.table_count} tables synced
-                </p>
-              </div>
-              <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">Connected</span>
+            <div className="space-y-2">
+              {databases.map((db) => (
+                <div key={db.database} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-3">
+                    <Database className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">{db.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {db.db_type} — {db.table_count} tables — synced {db.synced_at?.slice(0, 10) || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDisconnect(db.database)}
+                    disabled={disconnecting === db.database}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -150,7 +180,7 @@ export function ConnectDatabase() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{savedConn?.synced ? "Update Connection" : "Connect Database"}</CardTitle>
+          <CardTitle>Connect New Database</CardTitle>
           <CardDescription>Connect to your database to query your real schema</CardDescription>
         </CardHeader>
         <CardContent>
@@ -171,11 +201,6 @@ export function ConnectDatabase() {
             <div className="space-y-2">
               <Label htmlFor="host">Host</Label>
               <Input id="host" value={host} onChange={(e) => setHost(e.target.value)} />
-              {host === "localhost" && (
-                <p className="text-[10px] text-muted-foreground/60">
-                  Running in Docker? Use <code className="text-[10px] font-mono">host.docker.internal</code>
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="port">Port</Label>

@@ -8,12 +8,17 @@ import { type ReactNode } from "react";
 export function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const tryRestoreSession = useAuthStore((s) => s.tryRestoreSession);
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace("/auth/login");
+      tryRestoreSession().then(() => {
+        if (!useAuthStore.getState().isAuthenticated) {
+          router.replace("/auth/login");
+        }
+      });
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, tryRestoreSession]);
 
   if (!isAuthenticated) {
     return (

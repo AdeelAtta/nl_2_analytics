@@ -80,6 +80,7 @@ class PipelineOrchestrator:
         page_size: int = 1000,
         dry_run: bool = False,
         enable_quality: bool = True,
+        db_name: str = "",
     ) -> PipelineResult:
         with _tracer.start_as_current_span("pipeline.execute") as root_span:
             root_span.set_attribute("query", query)
@@ -88,7 +89,7 @@ class PipelineOrchestrator:
 
             result = await self._execute_inner(
                 query, context, schema_resolver, session_service,
-                session_id, tenant_id, tenant_tier,
+                session_id, tenant_id, tenant_tier, db_name,
                 num_candidates, reflect, timeout, page, page_size, dry_run,
                 enable_quality, root_span,
             )
@@ -107,6 +108,7 @@ class PipelineOrchestrator:
         session_id: str | None,
         tenant_id: str,
         tenant_tier: str,
+        db_name: str,
         num_candidates: int,
         reflect: bool,
         timeout: float,
@@ -123,7 +125,7 @@ class PipelineOrchestrator:
 
         if not merged_context.get("tables"):
             from ke.services.schema_registry import get_schema, build_ddl
-            real = get_schema(tenant_id)
+            real = get_schema(tenant_id, db_name)
             if real and real.get("tables"):
                 merged_context.setdefault("tables", real["tables"])
                 merged_context.setdefault("columns", real["columns"])

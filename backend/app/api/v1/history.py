@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.auth.dependencies import get_current_user
-from app.core.database import get_session
+from app.core.database import async_session_factory, get_session
 from ke.stores.query.repository import QueryHistoryRepository
 
 router = APIRouter(prefix="/api/v1/history", tags=["history"])
@@ -24,6 +24,7 @@ async def list_history(
     request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=500),
+    database: str = Query(""),
     current_user: dict[str, str] = Depends(get_current_user),
 ) -> dict[str, Any]:
     if current_user.get("sub") == "anonymous":
@@ -33,8 +34,8 @@ async def list_history(
     async def _list(session):
         repo = QueryHistoryRepository(session)
         from shared.models.pagination import PaginationParams
-        pagination = PaginationParams(page=page, page_size=page_size, sort_by="created_at")
-        items, total = await repo.list_by_tenant(tenant_id=tenant_id, pagination=pagination)
+        pagination = PaginationParams(page=page, page_size=page_size, sort_by="created_at", sort_order="desc")
+        items, total = await repo.list_by_tenant(tenant_id=tenant_id, pagination=pagination, database=database or None)
         return [
             {
                 "id": h.id, "query": h.query, "sql": h.sql, "status": h.status,
@@ -77,3 +78,22 @@ async def get_history(
             "created_at": item.created_at.isoformat(),
         },
     }
+
+
+@router.delete("/{history_id}")
+async def delete_history(
+    history_id: str,
+    current_user: dict[str, str] = Depends(get_current_user),
+) -> dict[str, Any]:
+    if current_user.get("sub") == "anonymous":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    async with get_session() as session:
+        repo = QueryHistoryRepository(session)
+        entry = await repo.get(history_id)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="History not found")
+        if entry.tenant_id != current_user.get("tenant_id", "demo"):
+            raise HTTPException(status_code=403, detail="Not allowed to delete this history entry")
+        await repo.delete(history_id, hard=True)
+    return {"success": True}

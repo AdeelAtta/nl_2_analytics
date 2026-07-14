@@ -8,6 +8,7 @@ from typing import Any
 
 import bcrypt as _bcrypt
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from app.core.database import async_session_factory
 
@@ -73,14 +74,25 @@ class FileStore:
 async def create_tenant(name: str, owner_email: str) -> dict[str, Any]:
     async with async_session_factory() as session:
         tid = str(uuid.uuid4())
-        slug = name.lower().replace(" ", "-")[:50]
-        await session.execute(
-            text("""
-                INSERT INTO auth.tenants (id, name, slug, owner_email, status, created_at)
-                VALUES (:id, :name, :slug, :email, 'active', :now)
-            """),
-            {"id": tid, "name": name, "slug": slug, "email": owner_email, "now": datetime.now(UTC)},
-        )
+        slug = name.lower().replace(" ", "-").replace("'", "").replace('"', "")[:50]
+        try:
+            await session.execute(
+                text("""
+                    INSERT INTO auth.tenants (id, name, slug, owner_email, status, created_at)
+                    VALUES (:id, :name, :slug, :email, 'active', :now)
+                """),
+                {"id": tid, "name": name, "slug": slug, "email": owner_email, "now": datetime.now(UTC)},
+            )
+        except IntegrityError:
+            await session.rollback()
+            slug = slug[:45] + "-" + uuid.uuid4().hex[:4]
+            await session.execute(
+                text("""
+                    INSERT INTO auth.tenants (id, name, slug, owner_email, status, created_at)
+                    VALUES (:id, :name, :slug, :email, 'active', :now)
+                """),
+                {"id": tid, "name": name, "slug": slug, "email": owner_email, "now": datetime.now(UTC)},
+            )
         await session.commit()
         return {
             "id": tid,
@@ -185,7 +197,23 @@ async def get_users_by_tenant(tenant_id: str) -> list[dict[str, Any]]:
             {"tid": tenant_id},
         )
         return [
-            {"id": str(r[0]), "email": r[1], "name": r[2],
+            {            "id": str(r[0]), "email": r[1], "name": r[2],
              "role": r[3], "tenant_id": str(r[4])}
             for r in result.fetchall()
         ]
+
+
+async def get_user_by_id(user_id: str) -> dict[str, Any] | None:
+    async with async_session_factory() as session:
+        result = await session.execute(
+            text("""
+                SELECT id, email, name, role, tenant_id
+                FROM auth.users WHERE id = :id
+            """),
+            {"id": user_id},
+        )
+        row = result.fetchone()
+        if row is None:
+            return None
+        return {"id": str(row[0]), "email": row[1], "name": row[2],
+                "role": row[3], "tenant_id": str(row[4])}

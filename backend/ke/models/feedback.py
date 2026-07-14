@@ -9,8 +9,9 @@ from shared.models.base import BaseSchema
 class QueryHistory(BaseSchema):
     model_config = {"from_attributes": True, "frozen": False}
 
-    id: str
+    id: Any = ""
     tenant_id: str
+    database: str = ""
     user_id: str | None = None
     session_id: str | None = None
     query: str

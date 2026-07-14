@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_session
-from ke.services.schema_registry import get_schema
+from ke.services.schema_registry import get_schema, list_databases as list_registry_dbs
 from ke.stores.schema.repository import (
     ColumnRepository,
     DatabaseConfigRepository,
@@ -34,8 +34,8 @@ async def _run(fn):
         return None
 
 
-def _registry_tables(tenant_id: str, page: int, page_size: int) -> dict[str, Any] | None:
-    schema = get_schema(tenant_id)
+def _registry_tables(tenant_id: str, page: int, page_size: int, db_name: str = "") -> dict[str, Any] | None:
+    schema = get_schema(tenant_id, db_name)
     if not schema or not schema.get("tables"):
         return None
     tables = schema["tables"]
@@ -57,11 +57,12 @@ async def list_tables(
     request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    database: str = Query(""),
     current_user: dict[str, str] = Depends(get_current_user),
 ) -> dict[str, Any]:
     tenant_id = _auth(current_user)
 
-    reg = _registry_tables(tenant_id, page, page_size)
+    reg = _registry_tables(tenant_id, page, page_size, database)
     if reg:
         return reg
 
@@ -84,11 +85,12 @@ async def list_tables(
 @router.get("/tables/{table_id}")
 async def get_table(
     table_id: str,
+    database: str = Query(""),
     current_user: dict[str, str] = Depends(get_current_user),
 ) -> dict[str, Any]:
     tenant_id = _auth(current_user)
 
-    schema = get_schema(tenant_id)
+    schema = get_schema(tenant_id, database)
     if schema and schema.get("tables"):
         for t in schema["tables"]:
             if t["name"] == table_id or f"reg-{t['name']}" == table_id:
@@ -143,21 +145,8 @@ async def list_databases(
     current_user: dict[str, str] = Depends(get_current_user),
 ) -> dict[str, Any]:
     tenant_id = _auth(current_user)
-
-    schema = get_schema(tenant_id)
-    if schema and schema.get("tables"):
-        return {
-            "success": True,
-            "data": [{"id": "synced-db", "name": "Synced Database", "db_type": "postgresql", "sync_status": "synced"}],
-        }
-
-    async def _list(session):
-        repo = DatabaseConfigRepository(session)
-        items = await repo.list_by_tenant(tenant_id)
-        return [{"id": d.id, "name": d.name, "db_type": d.db_type, "sync_status": d.sync_status} for d in items]
-
-    result = await _run(_list)
-    return {"success": True, "data": result or []}
+    dbs = list_registry_dbs(tenant_id)
+    return {"success": True, "data": dbs}
 
 
 @router.get("/search")

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -17,6 +17,20 @@ settings = get_settings()
 _dsn = settings.postgres_dsn
 if "+" not in _dsn.split("://")[0]:
     _dsn = _dsn.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+# Auto-add database column to query_history if not exists
+try:
+    _sync_engine = create_engine(settings.postgres_dsn_sync)
+    with _sync_engine.connect() as conn:
+        conn.execute(text("""
+            ALTER TABLE query_store.query_history
+            ADD COLUMN IF NOT EXISTS database VARCHAR(255) NOT NULL DEFAULT ''
+        """))
+        conn.commit()
+    _sync_engine.dispose()
+except Exception:
+    import logging
+    logging.getLogger(__name__).warning("Could not add database column to query_history")
 
 engine = create_async_engine(
     _dsn,

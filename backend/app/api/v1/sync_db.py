@@ -86,15 +86,25 @@ async def sync_status(
     if current_user.get("sub") == "anonymous":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     tenant_id = current_user.get("tenant_id", "demo")
-    from ke.services.schema_registry import get_schema, get_connection
-    schema = get_schema(tenant_id)
-    conn = get_connection(tenant_id)
+    from ke.services.schema_registry import list_databases
+    dbs = list_databases(tenant_id)
+    first = dbs[0] if dbs else None
     return {
         "success": True,
         "data": {
-            "synced": schema is not None,
-            "connection": conn,
-            "table_count": len(schema.get("tables", [])) if schema else 0,
+            "synced": len(dbs) > 0,
+            "connection": {
+                "name": first["name"] if first else None,
+                "db_type": first["db_type"] if first else None,
+                "host": first["host"] if first else None,
+                "port": 5432,
+                "database": first["database"] if first else None,
+                "username": "",
+                "table_count": first["table_count"] if first else 0,
+                "synced_at": first["synced_at"] if first else None,
+            } if first else None,
+            "table_count": first["table_count"] if first else 0,
+            "databases": dbs,
         },
     }
 
@@ -216,9 +226,9 @@ async def sync_and_extract(
         inferred_rels = _infer_relationships(tables_out)
         all_relationships = inferred_rels
 
-        # Store in persistent schema registry (JSON file fallback)
+        # Store in persistent schema registry
         from ke.services.schema_registry import store_schema as store_registry
-        store_registry(tenant_id, tables_out, all_columns, all_relationships)
+        store_registry(tenant_id, tables_out, all_columns, all_relationships, db_name=body.database)
 
         # Save connection details for later use
         from ke.services.schema_registry import store_connection
@@ -250,6 +260,19 @@ async def sync_and_extract(
         return {"success": False, "error": f"Unsupported DB type: {body.db_type}"}
     except Exception as e:
         return {"success": False, "error": f"Sync failed: {str(e)[:300]}"}
+
+
+@router.delete("/{database}")
+async def disconnect_database(
+    database: str,
+    current_user: dict[str, str] = Depends(get_current_user),
+) -> dict[str, Any]:
+    if current_user.get("sub") == "anonymous":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    tenant_id = current_user.get("tenant_id", "demo")
+    from ke.services.schema_registry import clear_schema
+    clear_schema(tenant_id, database)
+    return {"success": True, "data": {"database": database, "status": "disconnected"}}
 
 
 @router.post("/demo")
@@ -347,12 +370,22 @@ async def _store_in_postgres(tenant_id: str, tables: list[dict[str, Any]], colum
                     is_active=True, created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
                 ))
 
+            from ke.stores.schema.repository import SchemaInfoRepository
+            from ke.models.schema import SchemaInfo as SchemaInfoModel
+
             table_repo = TableRepository(session)
             col_repo = ColumnRepository(session)
+            schema_repo = SchemaInfoRepository(session)
             for tbl in tables:
                 tbl_uuid = str(_uuid.uuid4())
                 if await table_repo.get(tbl_uuid) is None:
                     schema_uuid = str(_uuid.uuid4())
+                    if await schema_repo.get(schema_uuid) is None:
+                        await schema_repo.create(SchemaInfoModel(
+                            id=schema_uuid, database_id=db_uuid,
+                            name="Synced Schema", table_count=1,
+                            created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+                        ))
                     await table_repo.create(TableModel(
                         id=tbl_uuid, schema_id=schema_uuid, name=tbl["name"],
                         description=f"{len(tbl['columns'])} columns",

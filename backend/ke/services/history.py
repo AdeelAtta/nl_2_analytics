@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
+
+from sqlalchemy import text
 
 from ke.models.feedback import QueryFeedback, QueryHistory
 from ke.stores.query.repository import (
@@ -34,10 +37,14 @@ class QueryHistoryService:
         stage_data: list[dict[str, Any]] | None = None,
         user_id: str | None = None,
         session_id: str | None = None,
-    ) -> QueryHistory:
-        record = QueryHistory(
-            id=str(uuid.uuid4()),
+        database: str = "",
+    ) -> dict[str, Any]:
+        record_id = str(uuid.uuid4())
+        from ke.stores.query.repository import QueryHistoryOrm
+        orm = QueryHistoryOrm(
+            id=record_id,
             tenant_id=tenant_id,
+            database=database,
             user_id=user_id,
             session_id=session_id,
             query=query,
@@ -46,11 +53,13 @@ class QueryHistoryService:
             duration_ms=duration_ms,
             model_tier=model_tier,
             model_name=model_name,
-            guard_passed=guard_passed,
+            guard_passed=1 if guard_passed else 0,
             guard_stopped_at=guard_stopped_at,
             stage_data=stage_data or [],
         )
-        return await self._history_repo.create(record)
+        self._history_repo._session.add(orm)
+        await self._history_repo._session.flush()
+        return {"id": record_id}
 
     async def list_history(
         self,
