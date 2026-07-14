@@ -116,6 +116,7 @@ jobs:
         run: pytest --cov=app --cov-report=xml --cov-report=term-missing
         env:
           POSTGRES_DSN: postgresql+asyncpg://postgres:postgres@localhost:5432/upl_test
+          POSTGRES_DSN_SYNC: postgresql://postgres:postgres@localhost:5432/upl_test
           INTEGRATION_TEST: 1
 
       - name: Run root-level tests
