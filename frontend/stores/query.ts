@@ -58,6 +58,7 @@ interface QueryState {
   setActiveDb: (db: string) => void;
   setActiveSessionId: (sid: string) => void;
   clearConversation: () => void;
+  resetStore: () => void;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
