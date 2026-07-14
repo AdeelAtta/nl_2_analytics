@@ -9,7 +9,7 @@ install: ## Install all dependencies
 
 dev: ## Start development environment
 	docker compose -f infra/docker/docker-compose.yml up -d postgres
-	cd backend && uv run uvicorn app.main:create_app --reload --port 8100 &
+	cd backend && uv run uvicorn app.main:app --reload --port 8100 &
 	cd frontend && npm run dev
 
 test: ## Run all tests

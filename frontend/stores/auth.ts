@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+import { useQueryStore } from "@/stores/query";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
 
 const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -23,8 +25,8 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   (set) => ({
     token: null,
-    tenantId: "demo",
-    userId: "demo-user",
+    tenantId: "",
+    userId: "",
     email: "",
     name: "",
     role: "user",
@@ -105,10 +107,16 @@ export const useAuthStore = create<AuthState>()(
       });
     },
 
-    logout: () => {
+    logout: async () => {
+      try {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: "POST", credentials: "include",
+        });
+      } catch { /* ignore */ }
+      useQueryStore.getState().resetStore();
       set({
-        token: null, isAuthenticated: false, email: "", name: "", role: "user",
-        tenantId: "demo", userId: "demo-user",
+        token: null, isAuthenticated: false, email: "", name: "", role: "",
+        tenantId: "", userId: "",
       });
     },
   }),

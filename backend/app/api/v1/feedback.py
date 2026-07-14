@@ -69,7 +69,7 @@ async def list_feedback(
         repo = QueryFeedbackRepository(session)
         from shared.models.pagination import PaginationParams
         pagination = PaginationParams(page=page, page_size=page_size, sort_by="created_at")
-        items, total = await repo.list(pagination=pagination)
+        items, total = await repo.list(filters={"user_id": current_user.get("sub")}, pagination=pagination)
     return {
         "success": True,
         "data": [

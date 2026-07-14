@@ -118,7 +118,7 @@ async def create_user(email: str, password: str, tenant_id: str, name: str = "")
         await session.execute(
             text("""
                 INSERT INTO auth.users (id, email, password_hash, name, role, tenant_id, created_at)
-                VALUES (:id, :email, :pwd, :name, 'admin', :tid, :now)
+                VALUES (:id, :email, :pwd, :name, 'user', :tid, :now)
             """),
             {
                 "id": uid, "email": email, "pwd": pwd_hash,
@@ -131,8 +131,7 @@ async def create_user(email: str, password: str, tenant_id: str, name: str = "")
             "id": uid,
             "email": email,
             "name": name or email.split("@")[0],
-            "password_hash": pwd_hash,
-            "role": "admin",
+            "role": "user",
             "tenant_id": tenant_id,
             "created_at": str(datetime.now(UTC)),
         }
@@ -178,7 +177,13 @@ async def get_tenant(tenant_id: str) -> dict[str, Any] | None:
 async def get_tenants_by_user(user_id: str) -> list[dict[str, Any]]:
     async with async_session_factory() as session:
         result = await session.execute(
-            text("SELECT id, name, slug, owner_email, status FROM auth.tenants"),
+            text("""
+                SELECT t.id, t.name, t.slug, t.owner_email, t.status
+                FROM auth.tenants t
+                JOIN auth.users u ON u.tenant_id = t.id
+                WHERE u.id = :uid
+            """),
+            {"uid": user_id},
         )
         return [
             {"id": str(r[0]), "name": r[1], "slug": r[2],

@@ -61,7 +61,7 @@ async def execute_query(
         return {"success": True, "preview": True, "schema": ddl, "tables": [t.name for t in intent.tables]}
 
     session_id = body.get("session_id")
-    dry_run = body.get("dry_run", True)
+    dry_run = body.get("dry_run", False)
 
     try:
         result: PipelineResult = await orchestrator.execute(

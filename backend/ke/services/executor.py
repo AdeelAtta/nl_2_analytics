@@ -155,12 +155,14 @@ class QueryExecutor:
 
     def _classify_error(self, error: Exception) -> ExecutionError:
         msg = str(error).lower()
-        if any(k in msg for k in ("syntax error", "syntax_error", "parser error", "column", "does not exist", "relation")):
+        if any(k in msg for k in ("syntax error", "syntax_error", "parser error")):
             return ExecutionError(code=self.ERROR_CODES["syntax"], message="SQL syntax error", detail=str(error))
+        if any(k in msg for k in ("does not exist", "relation", "not found")):
+            return ExecutionError(code=self.ERROR_CODES["not_found"], message="Table or column not found", detail=str(error))
+        if any(k in msg for k in ("column", "not exist")):
+            return ExecutionError(code=self.ERROR_CODES["not_found"], message="Column not found", detail=str(error))
         if any(k in msg for k in ("permission denied", "not authorized", "cannot execute", "no permission")):
             return ExecutionError(code=self.ERROR_CODES["permission"], message="Permission denied", detail=str(error))
         if any(k in msg for k in ("could not connect", "connection refused", "connection timed out", "no such host")):
             return ExecutionError(code=self.ERROR_CODES["connection"], message="Connection failed", detail=str(error))
-        if any(k in msg for k in ("not found", "does not exist", "not exist")):
-            return ExecutionError(code=self.ERROR_CODES["not_found"], message="Resource not found", detail=str(error))
         return ExecutionError(code=self.ERROR_CODES["internal"], message="Internal execution error", detail=str(error))

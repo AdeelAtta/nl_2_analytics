@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import time
 from collections import defaultdict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, field_validator
@@ -103,6 +104,7 @@ async def demo_login(body: DemoLoginRequest, response: Response) -> AuthResponse
 
 @router.post("/auth/register", response_model=AuthResponse)
 async def register(body: RegisterRequest, response: Response) -> AuthResponse:
+    _check_login_rate(body.email)
     try:
         if body.tenant_name:
             tenant = await create_tenant(body.tenant_name, body.email)
@@ -143,8 +145,20 @@ async def login(body: LoginRequest, response: Response) -> AuthResponse:
     )
 
 
+@router.post("/auth/logout")
+async def logout(response: Response) -> dict[str, bool]:
+    response.set_cookie(
+        key="refresh_token",
+        value="",
+        httponly=True,
+        max_age=0,
+        path="/api/v1/auth",
+    )
+    return {"success": True}
+
+
 @router.post("/auth/refresh")
-async def refresh_token(request: Request) -> dict[str, str]:
+async def refresh_token(request: Request, response: Response) -> dict[str, Any]:
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token")
@@ -158,6 +172,8 @@ async def refresh_token(request: Request) -> dict[str, str]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     new_token = create_token({"sub": user["id"], "tenant_id": user["tenant_id"], "role": user["role"]})
+    new_refresh = create_refresh_token(user["id"])
+    _set_refresh_cookie(response, new_refresh)
     return {
         "access_token": new_token,
         "token_type": "bearer",

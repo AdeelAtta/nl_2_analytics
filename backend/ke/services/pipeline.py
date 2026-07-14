@@ -404,52 +404,63 @@ class PipelineOrchestrator:
                 error=f"Blocked by guardrail: {layer_name}",
             )
 
-        # Stage 5: Execute
+        # Stage 5: Execute (skip on dry_run — user clicks Run to execute)
         st = time.perf_counter()
         sql_to_execute = guard_result.sanitized_sql or generation.sql
-        try:
-            with _tracer.start_as_current_span("stage.execute") as stage_span:
-                execution = await self._executor.execute(
-                    sql=sql_to_execute,
-                    timeout=timeout,
-                    page=page,
-                    page_size=page_size,
-                    dry_run=dry_run,
-                )
-                elapsed = (time.perf_counter() - st) * 1000
-                stage_status = execution.status.value
-                stages.append(PipelineStageResult(
-                    name="execute",
-                    status=stage_status,
-                    data={"row_count": execution.row_count, "total_rows": execution.total_rows, "truncated": execution.truncated},
-                    duration_ms=elapsed,
-                ))
-                stage_span.set_attribute("execution.status", execution.status.value)
-                stage_span.set_attribute("execution.row_count", execution.row_count)
-                stage_span.set_attribute("execution.total_rows", execution.total_rows)
-                stage_span.set_attribute("execution.dry_run", dry_run)
-                _set_stage_span_attrs(stage_span, "execute", stage_status, elapsed)
-                record_stage_result("execute", stage_status, elapsed)
-        except Exception as e:
+        execution = None
+        if dry_run:
             elapsed = (time.perf_counter() - st) * 1000
-            stages.append(PipelineStageResult(name="execute", status="failed", error=str(e), duration_ms=elapsed))
-            record_stage_result("execute", "failed", elapsed)
-            return self._fail(pipeline_id, query, start, stages, str(e))
+            stages.append(PipelineStageResult(name="execute", status="skipped", duration_ms=elapsed))
+            record_stage_result("execute", "skipped", elapsed)
+        else:
+            try:
+                with _tracer.start_as_current_span("stage.execute") as stage_span:
+                    execution = await self._executor.execute(
+                        sql=sql_to_execute,
+                        timeout=timeout,
+                        page=page,
+                        page_size=page_size,
+                        dry_run=dry_run,
+                    )
+                    elapsed = (time.perf_counter() - st) * 1000
+                    stage_status = execution.status.value
+                    exec_error = str(execution.error.message) if execution.error else None
+                    stages.append(PipelineStageResult(
+                        name="execute",
+                        status=stage_status,
+                        data={"row_count": execution.row_count, "total_rows": execution.total_rows, "truncated": execution.truncated},
+                        error=exec_error,
+                        duration_ms=elapsed,
+                    ))
+                    stage_span.set_attribute("execution.status", execution.status.value)
+                    stage_span.set_attribute("execution.row_count", execution.row_count)
+                    stage_span.set_attribute("execution.total_rows", execution.total_rows)
+                    stage_span.set_attribute("execution.dry_run", dry_run)
+                    _set_stage_span_attrs(stage_span, "execute", stage_status, elapsed)
+                    record_stage_result("execute", stage_status, elapsed)
+            except Exception as e:
+                elapsed = (time.perf_counter() - st) * 1000
+                stages.append(PipelineStageResult(name="execute", status="failed", error=str(e), duration_ms=elapsed))
+                record_stage_result("execute", "failed", elapsed)
+                return self._fail(pipeline_id, query, start, stages, str(e))
 
         # Save turn to session
         if session_service is not None and resolved_session_id:
+            result_summary = ""
+            if execution and execution.row_count:
+                result_summary = f"{execution.row_count} rows returned"
             await session_service.add_turn(
                 session_id=resolved_session_id,
                 query=query,
                 sql=generation.sql if generation else "",
-                result_summary=f"{execution.row_count} rows returned" if execution and execution.row_count else "",
+                result_summary=result_summary,
                 intent_type=intent.query_type.value if intent else "",
                 model_tier=generation.model_tier if generation else "none",
                 model_name=generation.model_name if generation else "",
                 tenant_id=tenant_id,
             )
 
-        overall_status = PipelineStatus.SUCCESS if execution.status.value in ("success", "dry_run") else PipelineStatus.FAILED
+        overall_status = PipelineStatus.SUCCESS if (execution is None or execution.status.value in ("success", "dry_run")) else PipelineStatus.FAILED
         return PipelineResult(
             id=pipeline_id,
             query=query,

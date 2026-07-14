@@ -136,7 +136,7 @@ async def sync_and_extract(
 ) -> dict[str, Any]:
     if current_user.get("sub") == "anonymous":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    tenant_id = current_user.get("tenant_id", "default")
+    tenant_id = current_user.get("tenant_id", "demo")
     try:
         from schema_intelligence.annotators.llm_provider import LLMAnnotator
         from schema_intelligence.services.annotation import AnnotationService
@@ -146,7 +146,7 @@ async def sync_and_extract(
         if _hf_token:
             llm_annotator = LLMAnnotator(
                 endpoint="https://router.huggingface.co/v1",
-                model="Qwen/Qwen2.5-Coder-7B-Instruct",
+                model="meta-llama/Llama-3.1-8B-Instruct",
                 api_key=_hf_token,
                 timeout_seconds=120,
             )
@@ -273,65 +273,6 @@ async def disconnect_database(
     from ke.services.schema_registry import clear_schema
     clear_schema(tenant_id, database)
     return {"success": True, "data": {"database": database, "status": "disconnected"}}
-
-
-@router.post("/demo")
-async def sync_demo(
-    current_user: dict[str, str] = Depends(get_current_user),
-) -> dict[str, Any]:
-    if current_user.get("sub") == "anonymous":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    tenant_id = current_user.get("tenant_id", "default")
-    try:
-        body = SyncConnectionRequest(
-            name="Chinook Demo",
-            db_type="postgresql",
-            host="postgres",
-            port=5432,
-            database="chinook",
-            username="postgres",
-            password="postgres",
-        )
-        connector_cls = ConnectorRegistry.get_connector(body.db_type)
-        connector = connector_cls()
-        await connector.connect(_make_config(body, 10))
-
-        from schema_intelligence.sync.orchestrator import SyncOrchestrator
-        orchestrator = SyncOrchestrator(annotation_service=None)
-        result = await orchestrator.sync(_make_config(body, 30), db_type=body.db_type)
-        await connector.close()
-
-        tables_out = []
-        all_columns = []
-        change_map: dict[str, Any] = {}
-        for change in result.changes:
-            change_map[change.table.name.lower()] = change
-            table = change.table
-            cols = []
-            for i, c in enumerate(table.columns):
-                col_data = {
-                    "name": c.name, "data_type": c.data_type,
-                    "is_primary_key": c.is_primary_key, "is_nullable": c.is_nullable,
-                    "ordinal_position": i, "table_name": table.name, "description": "",
-                }
-                cols.append(col_data)
-                all_columns.append(col_data)
-            tables_out.append({"name": table.name, "description": "", "columns": cols})
-
-        from ke.services.schema_registry import store_schema as store_registry, store_connection
-        store_registry(tenant_id, tables_out, all_columns, [])
-        store_connection(tenant_id, {
-            "name": "Chinook Demo", "db_type": "postgresql",
-            "host": "postgres", "port": 5432,
-            "database": "chinook", "username": "postgres",
-            "ssl": False, "synced_at": str(datetime.now(UTC)),
-            "table_count": len(tables_out),
-        })
-        await _store_in_postgres(tenant_id, tables_out, all_columns)
-
-        return {"success": True, "data": {"tables": tables_out, "added": len(tables_out), "changed": 0, "removed": 0}}
-    except Exception as e:
-        return {"success": False, "error": f"Demo sync failed: {str(e)[:300]}"}
 
 
 async def _store_in_postgres(tenant_id: str, tables: list[dict[str, Any]], columns: list[dict[str, Any]]) -> None:

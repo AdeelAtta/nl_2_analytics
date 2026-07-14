@@ -63,6 +63,7 @@ class QueryHistoryRepository(BaseRepository[QueryHistory]):
         user_id: str | None = None,
         status_filter: str | None = None,
         database: str | None = None,
+        session_id: str | None = None,
     ) -> tuple[list[QueryHistory], int]:
         filters: dict[str, Any] = {"tenant_id": tenant_id}
         if user_id:
@@ -71,6 +72,8 @@ class QueryHistoryRepository(BaseRepository[QueryHistory]):
             filters["status"] = status_filter
         if database:
             filters["database"] = database
+        if session_id:
+            filters["session_id"] = session_id
         return await self.list(filters=filters, pagination=pagination)
 
     async def mark_feedback(self, query_id: str) -> None:

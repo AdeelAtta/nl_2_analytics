@@ -17,9 +17,9 @@ class ModelRouter:
         },
         ModelTier.LIGHTWEIGHT: {
             "provider": "huggingface",
-            "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+            "model": "meta-llama/Llama-3.1-8B-Instruct",
             "cost_per_query": 0.0001,
-            "description": "Code-specialized model for SQL queries",
+            "description": "General-purpose model for SQL queries",
         },
         ModelTier.STANDARD: {
             "provider": "huggingface",

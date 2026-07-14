@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
@@ -11,6 +11,19 @@ logger = logging.getLogger(__name__)
 
 def setup_error_handlers(app: FastAPI) -> None:
     settings = get_settings()
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "type": "about:blank",
+                "title": exc.detail,
+                "status": exc.status_code,
+                "detail": exc.detail,
+                "instance": str(request.url),
+            },
+        )
 
     @app.exception_handler(Exception)
     async def global_exception_handler(

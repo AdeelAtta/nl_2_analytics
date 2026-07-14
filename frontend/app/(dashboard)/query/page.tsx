@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
 import { useQueryStore } from "@/stores/query";
@@ -25,6 +25,11 @@ export default function QueryPage() {
     activeDb,
     loadDatabases,
     setActiveDb,
+    sessions,
+    activeSessionId,
+    sessionId,
+    loadSessions,
+    setActiveSessionId,
   } = useQueryStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,9 +49,16 @@ export default function QueryPage() {
 
   useEffect(() => {
     if (token && isAuth && activeDb) {
-      loadHistory(token, activeDb);
+      loadSessions(token, activeDb);
+      loadHistory(token, activeDb, activeSessionId);
     }
-  }, [activeDb, token, isAuth, loadHistory]);
+  }, [activeDb, token, isAuth, loadSessions, loadHistory, activeSessionId]);
+
+  useEffect(() => {
+    if (sessions.length > 0 && !activeSessionId) {
+      setActiveSessionId(sessions[0].session_id);
+    }
+  }, [sessions, activeSessionId, setActiveSessionId]);
 
   useEffect(() => {
     const qParam = searchParams.get("q");
@@ -71,6 +83,29 @@ export default function QueryPage() {
     },
     [token, execute, addToast],
   );
+
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteSession = async () => {
+    if (!token || deleting) return;
+    setDeleting(true);
+    try {
+      const params = new URLSearchParams();
+      if (activeDb) params.set("database", activeDb);
+      const deleteSessionId = activeSessionId || sessionId;
+      if (deleteSessionId) params.set("session_id", deleteSessionId);
+      const qs = params.toString();
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1"}/history${qs ? "?" + qs : ""}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      clearConversation();
+      addToast("Session deleted", "info");
+    } catch {
+      addToast("Failed to delete session", "error");
+    }
+    setDeleting(false);
+  };
 
   const handleClear = () => {
     clearConversation();
@@ -97,6 +132,23 @@ export default function QueryPage() {
             ))}
           </select>
           <span className="text-xs text-muted-foreground">Active database</span>
+        </div>
+      )}
+
+      {sessions.length > 1 && (
+        <div className="flex items-center gap-2 border-b px-4 py-1">
+          <select
+            value={activeSessionId || ""}
+            onChange={(e) => setActiveSessionId(e.target.value)}
+            className="rounded-md border bg-background px-2 py-1 text-xs font-medium outline-none"
+          >
+            {sessions.map((s) => (
+              <option key={s.session_id} value={s.session_id}>
+                Session {s.started_at?.slice(0, 10) || "unknown"} ({s.query_count} queries)
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted-foreground">Session</span>
         </div>
       )}
 
@@ -134,13 +186,21 @@ export default function QueryPage() {
               <h2 className="text-sm font-medium text-muted-foreground">
                 {messages.length} message{messages.length !== 1 ? "s" : ""}
               </h2>
-              <button
-                onClick={handleClear}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground/60 transition-all hover:bg-muted/80 hover:text-foreground"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                New chat
-              </button>
+            <button
+              onClick={handleDeleteSession}
+              disabled={deleting}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
+              title="Delete all history for this database"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {deleting ? "Deleting..." : "Delete session"}
+            </button>
+            <button
+              onClick={handleClear}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground/60 hover:text-foreground hover:bg-muted/80 transition-all"
+            >
+              + New chat
+            </button>
             </div>
             <div className="space-y-2 px-4 pb-4 pt-4">
               {messages.map((msg, i) => (

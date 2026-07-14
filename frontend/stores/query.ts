@@ -35,18 +35,28 @@ export interface ChatMessage {
   error?: string | null;
 }
 
+interface SessionInfo {
+  session_id: string;
+  started_at: string;
+  query_count: number;
+}
+
 interface QueryState {
   messages: ChatMessage[];
   loading: boolean;
   activeDb: string;
   sessionId: string;
+  activeSessionId: string;
   databases: { name: string; database: string; table_count: number }[];
+  sessions: SessionInfo[];
   addMessage: (msg: ChatMessage) => void;
   updateLastAssistant: (update: Partial<ChatMessage>) => void;
-  execute: (query: string, token: string, db?: string) => Promise<void>;
-  loadHistory: (token: string, db?: string) => Promise<void>;
+  execute: (query: string, token: string, db?: string, dryRun?: boolean) => Promise<void>;
+  loadHistory: (token: string, db?: string, sessionId?: string) => Promise<void>;
   loadDatabases: (token: string) => Promise<void>;
+  loadSessions: (token: string, db?: string) => Promise<void>;
   setActiveDb: (db: string) => void;
+  setActiveSessionId: (sid: string) => void;
   clearConversation: () => void;
 }
 
@@ -60,7 +70,9 @@ export const useQueryStore = create<QueryState>()((set, get) => ({
   loading: false,
   activeDb: "",
   sessionId: "",
+  activeSessionId: "",
   databases: [],
+  sessions: [],
 
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
 
@@ -76,7 +88,7 @@ export const useQueryStore = create<QueryState>()((set, get) => ({
       return { messages: msgs };
     }),
 
-  execute: async (query: string, token: string, db?: string) => {
+  execute: async (query: string, token: string, db?: string, dryRun?: boolean) => {
     if (!query.trim()) return;
 
     const userMsg: ChatMessage = { id: nextId(), role: "user", content: query };
@@ -94,7 +106,7 @@ export const useQueryStore = create<QueryState>()((set, get) => ({
     try {
       const body: Record<string, unknown> = {
         query,
-        dry_run: true,
+        dry_run: dryRun ?? true,
         database: db || get().activeDb,
       };
       const sid = get().sessionId;
@@ -110,10 +122,10 @@ export const useQueryStore = create<QueryState>()((set, get) => ({
         throw new Error(`API Error [${res.status}]: ${text}`);
       }
       const data: QueryResult = await res.json();
-      if (data.session_id) set({ sessionId: data.session_id });
+      if (data.session_id) set({ sessionId: data.session_id, activeSessionId: data.session_id });
       get().updateLastAssistant({ result: data, loading: false, error: null });
       set({ loading: false });
-      get().loadHistory(token, get().activeDb);
+      get().loadHistory(token, get().activeDb, get().activeSessionId);
     } catch (e) {
       get().updateLastAssistant({
         loading: false,
@@ -124,18 +136,23 @@ export const useQueryStore = create<QueryState>()((set, get) => ({
     }
   },
 
-  loadHistory: async (token: string, db?: string) => {
+  loadHistory: async (token: string, db?: string, sessionId?: string) => {
     try {
-      const dbParam =
-        db || get().activeDb ? `&database=${encodeURIComponent(db || get().activeDb)}` : "";
-      const res = await fetch(`${API_URL}/history?page_size=20${dbParam}`, {
+      const params = new URLSearchParams();
+      params.set("page_size", "50");
+      const activeDatabase = db || get().activeDb;
+      if (activeDatabase) params.set("database", activeDatabase);
+      const activeSession = sessionId || get().activeSessionId;
+      if (activeSession) params.set("session_id", activeSession);
+      const res = await fetch(`${API_URL}/history?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
         const historyItems = data.data ?? [];
         const messages: ChatMessage[] = [];
-        for (const item of historyItems) {
+        for (let i = historyItems.length - 1; i >= 0; i--) {
+          const item = historyItems[i];
           messages.push({
             id: `hist-user-${item.id}`,
             role: "user",
@@ -164,7 +181,26 @@ export const useQueryStore = create<QueryState>()((set, get) => ({
     }
   },
 
-  clearConversation: () => set({ messages: [], loading: false }),
+  clearConversation: () => set({ messages: [], loading: false, sessionId: "" }),
+
+  resetStore: () => set({
+    messages: [], loading: false, activeDb: "", sessionId: "",
+    activeSessionId: "", databases: [], sessions: [],
+  }),
+
+  loadSessions: async (token: string, db?: string) => {
+    try {
+      const activeDatabase = db || get().activeDb;
+      const url = activeDatabase ? `${API_URL}/history/sessions?database=${encodeURIComponent(activeDatabase)}` : `${API_URL}/history/sessions`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        set({ sessions: data.data ?? [] });
+      }
+    } catch (e) { console.error("Failed to load sessions:", e); }
+  },
+
+  setActiveSessionId: (sid: string) => set({ activeSessionId: sid }),
 
   loadDatabases: async (token: string) => {
     try {

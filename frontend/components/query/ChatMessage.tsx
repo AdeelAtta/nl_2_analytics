@@ -5,13 +5,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  ChevronDown, ChevronRight, Copy, Check,
+  ChevronDown, ChevronRight, Copy, Check, Play,
   ThumbsUp, ThumbsDown, Sparkles, User,
   AlertCircle, Clock,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { useUIStore } from "@/stores/ui";
-import type { QueryResult } from "@/stores/query";
+import { useQueryStore, type QueryResult } from "@/stores/query";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100/api/v1";
 
@@ -138,6 +138,12 @@ function ResultBubble({ result, msgId }: { result: QueryResult; msgId: string })
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleRun = () => {
+    const q = result.query;
+    if (!q || !token) return;
+    useQueryStore.getState().execute(q, token, undefined, false);
+  };
+
   const handleFeedback = async (rating: 1 | 2) => {
     if (feedback || !token) return;
     try {
@@ -198,18 +204,28 @@ function ResultBubble({ result, msgId }: { result: QueryResult; msgId: string })
                   <pre className="overflow-x-auto bg-[#1e1e2e] p-4 text-sm font-mono leading-relaxed text-[#cdd6f4]">
                     <code>{highlightSQL(result.sql)}</code>
                   </pre>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute right-2 top-2 h-7 gap-1.5 px-2.5 text-[10px] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
-                    onClick={handleCopy}
-                  >
-                    {copied ? (
-                      <><Check className="h-3 w-3 text-green-500" /> Copied</>
-                    ) : (
-                      <><Copy className="h-3 w-3" /> Copy</>
-                    )}
-                  </Button>
+                  <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="h-7 gap-1.5 px-2.5 text-[10px] shadow-sm"
+                      onClick={handleRun}
+                    >
+                      <Play className="h-3 w-3" /> Run
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="h-7 gap-1.5 px-2.5 text-[10px] shadow-sm"
+                      onClick={handleCopy}
+                    >
+                      {copied ? (
+                        <><Check className="h-3 w-3 text-green-500" /> Copied</>
+                      ) : (
+                        <><Copy className="h-3 w-3" /> Copy</>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
