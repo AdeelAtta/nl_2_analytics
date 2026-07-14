@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from enum import Enum
 from uuid import UUID
 from typing import Any
 
@@ -11,10 +12,16 @@ def _serialize_row(row: dict[str, Any]) -> dict[str, Any]:
     for k, v in row.items():
         if isinstance(v, (datetime, date)):
             cleaned[k] = v.isoformat()
+        elif isinstance(v, timedelta):
+            cleaned[k] = str(v)
         elif isinstance(v, Decimal):
             cleaned[k] = float(v)
         elif isinstance(v, UUID):
             cleaned[k] = str(v)
+        elif isinstance(v, bytes):
+            cleaned[k] = v.hex()
+        elif isinstance(v, Enum):
+            cleaned[k] = v.value
         else:
             cleaned[k] = v
     return cleaned
